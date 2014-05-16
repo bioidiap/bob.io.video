@@ -7,6 +7,12 @@
    import numpy
    import xbob.io.base
    import xbob.io.video
+   import tempfile
+   import os
+
+   current_directory = os.path.realpath(os.curdir)
+   temp_dir = tempfile.mkdtemp(prefix='bob_doctest_')
+   os.chdir(temp_dir)
 
 ============
  User Guide
