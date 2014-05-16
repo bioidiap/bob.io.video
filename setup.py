@@ -18,7 +18,17 @@ packages = [
   'libavutil >= 49.15.0',
   'libswscale >= 0.7.1'
   ]
+
 version = '2.0.0a0'
+
+# Check if python-imaging means pil or pillow
+pil_or_pillow = []
+try:
+  import pkg_resources
+  pkg_resources.require('PIL')
+  pil_or_pillow.append('pil')
+except pkg_resources.DistributionNotFound as e:
+  pil_or_pillow.append('pillow')
 
 setup(
 
@@ -39,7 +49,7 @@ setup(
       'setuptools',
       'xbob.blitz',
       'xbob.io.base',
-    ],
+    ] + pil_or_pillow,
 
     namespace_packages=[
       "xbob",
