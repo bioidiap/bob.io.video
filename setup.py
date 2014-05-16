@@ -11,6 +11,7 @@ import xbob.io.base
 include_dirs = [xbob.io.base.get_include()]
 
 packages = [
+  'boost',
   'bob-io >= 2.0.0a2',
   'libavformat >= 52.31.0',
   'libavcodec >= 52.20.0',
@@ -67,6 +68,7 @@ setup(
           "xbob/io/video/main.cpp",
           ],
         packages = packages,
+        boost_modules = ['system'],
         include_dirs = include_dirs,
         version = version,
         define_macros = [('__STDC_CONSTANT_MACROS', None)],
