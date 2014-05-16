@@ -15,7 +15,6 @@ from .utils import color_distortion, frameskip_detection, quality_degradation
 # These are some global parameters for the test.
 INPUT_VIDEO = test_utils.datafile('test.mov', __name__)
 
-@test_utils.ffmpeg_found()
 def check_format_codec(function, shape, framerate, format, codec, maxdist):
 
   length, height, width = shape
@@ -98,39 +97,36 @@ def test_format_codecs():
     distortions['mpeg2video']['color'] = 9.0
     distortions['mpeg2video']['frameskip'] = 1.4
 
-  from .version import externals
-  if externals['FFmpeg']['ffmpeg'] != 'unavailable':
-    from .version import supported_videowriter_formats
-    SUPPORTED = supported_videowriter_formats()
-    for format in SUPPORTED:
-      for codec in SUPPORTED[format]['supported_codecs']:
-        for method in methods:
-          check_format_codec.description = "%s.test_%s_format_%s_codec_%s" % (__name__, method, format, codec)
-          distortion = distortions.get(codec, distortions['default'])[method]
-          yield check_format_codec, methods[method], shape, framerate, format, codec, distortion
+  from . import supported_videowriter_formats
+  SUPPORTED = supported_videowriter_formats()
+  for format in SUPPORTED:
+    for codec in SUPPORTED[format]['supported_codecs']:
+      for method in methods:
+        check_format_codec.description = "%s.test_%s_format_%s_codec_%s" % (__name__, method, format, codec)
+        distortion = distortions.get(codec, distortions['default'])[method]
+        yield check_format_codec, methods[method], shape, framerate, format, codec, distortion
 
-@test_utils.ffmpeg_found()
 def check_user_video(format, codec, maxdist):
 
-  from . import VideoReader, VideoWriter
+  from . import reader, writer
   fname = test_utils.temporary_filename(suffix='.%s' % format)
   MAXLENTH = 10 #use only the first 10 frames
 
   try:
 
-    orig_vreader = VideoReader(INPUT_VIDEO)
+    orig_vreader = reader(INPUT_VIDEO)
     orig = orig_vreader[:MAXLENTH]
     (olength, _, oheight, owidth) = orig.shape
     assert len(orig) == MAXLENTH, "original length %d != %d MAXLENTH" % (len(orig), MAXLENTH)
 
     # encode the input video using the format and codec provided by the user
-    outv = VideoWriter(fname, oheight, owidth, orig_vreader.frame_rate,
+    outv = writer(fname, oheight, owidth, orig_vreader.frame_rate,
         codec=codec, format=format)
     for k in orig: outv.append(k)
     outv.close()
 
     # reload from saved file
-    encoded = VideoReader(fname)
+    encoded = reader(fname)
     reloaded = encoded.load()
 
     # test number of frames is correct
@@ -181,12 +177,10 @@ def test_user_video():
       msmpeg4v2  = 2.3,
       )
 
-  from .version import externals
-  if externals['FFmpeg']['ffmpeg'] != 'unavailable':
-    from .version import supported_videowriter_formats
-    SUPPORTED = supported_videowriter_formats()
-    for format in SUPPORTED:
-      for codec in SUPPORTED[format]['supported_codecs']:
-        check_user_video.description = "%s.test_user_video_format_%s_codec_%s" % (__name__, format, codec)
-        distortion = distortions.get(codec, distortions['default'])
-        yield check_user_video, format, codec, distortion
+  from . import supported_videowriter_formats
+  SUPPORTED = supported_videowriter_formats()
+  for format in SUPPORTED:
+    for codec in SUPPORTED[format]['supported_codecs']:
+      check_user_video.description = "%s.test_user_video_format_%s_codec_%s" % (__name__, format, codec)
+      distortion = distortions.get(codec, distortions['default'])
+      yield check_user_video, format, codec, distortion

@@ -5,15 +5,14 @@
  * @brief Bindings to bob::io::video::Reader
  */
 
-#define XBOB_IO_BASE_MODULE
+#include "cpp/reader.h"
 #include "bobskin.h"
-#include <xbob.io.base/api.h>
 
-#if WITH_FFMPEG
 #include <boost/make_shared.hpp>
 #include <numpy/arrayobject.h>
 #include <xbob.blitz/capi.h>
 #include <xbob.blitz/cleanup.h>
+#include <xbob.io.base/api.h>
 #include <stdexcept>
 
 #define VIDEOREADER_NAME "reader"
@@ -41,7 +40,7 @@ implementation uses `FFmpeg <http://ffmpeg.org>`_ (or\n\
 `libav <http://libav.org>`_ if FFmpeg is not available) which is\n\
 a stable freely available video encoding and decoding library,\n\
 designed specifically for these tasks. You can read an entire\n\
-video in memory by using the :py:meth:`xbob.io.video.Reader.load`\n\
+video in memory by using the :py:meth:`xbob.io.video.reader.load`\n\
 method or use iterators to read it frame by frame and avoid\n\
 overloading your machine\'s memory. The maximum precision data\n\
 `FFmpeg`_ will yield is a 24-bit (8-bit per band) representation\n\
@@ -52,6 +51,13 @@ standard, with each band varying between 0 and 255, with zero\n\
 meaning pure black and 255, pure white (color).\n\
 \n\
 ");
+
+typedef struct {
+  PyObject_HEAD
+  boost::shared_ptr<bob::io::video::Reader> v;
+} PyBobIoVideoReaderObject;
+
+extern PyTypeObject PyBobIoVideoReader_Type;
 
 /* How to create a new PyBobIoVideoReaderObject */
 static PyObject* PyBobIoVideoReader_New(PyTypeObject* type, PyObject*, PyObject*) {
@@ -555,8 +561,16 @@ static PyMappingMethods PyBobIoVideoReader_Mapping = {
  * Definition of Iterator to VideoReader *
  *****************************************/
 
-#define VIDEOITERTYPE_NAME "VideoReader.iter"
+#define VIDEOITERTYPE_NAME "reader.iter"
 PyDoc_STRVAR(s_videoreaderiterator_str, XBOB_EXT_MODULE_PREFIX "." VIDEOITERTYPE_NAME);
+
+typedef struct {
+  PyObject_HEAD
+  PyBobIoVideoReaderObject* pyreader;
+  boost::shared_ptr<bob::io::video::Reader::const_iterator> iter;
+} PyBobIoVideoReaderIteratorObject;
+
+extern PyTypeObject PyBobIoVideoReaderIterator_Type;
 
 static PyObject* PyBobIoVideoReaderIterator_New(PyTypeObject* type, PyObject*, PyObject*) {
 
@@ -699,5 +713,3 @@ PyTypeObject PyBobIoVideoReader_Type = {
     0,                                          /* tp_alloc */
     PyBobIoVideoReader_New,                     /* tp_new */
 };
-
-#endif /* WITH_FFMPEG */

@@ -5,15 +5,14 @@
  * @brief Bindings to bob::io::video::Writer
  */
 
-#define XBOB_IO_BASE_MODULE
+#include "cpp/writer.h"
 #include "bobskin.h"
-#include <xbob.io.base/api.h>
 
-#if WITH_FFMPEG
 #include <boost/make_shared.hpp>
 #include <numpy/arrayobject.h>
 #include <xbob.blitz/cppapi.h>
 #include <xbob.blitz/cleanup.h>
+#include <xbob.io.base/api.h>
 #include <stdexcept>
 
 #define VIDEOWRITER_NAME "writer"
@@ -71,6 +70,13 @@ of RGB colored frames. Each frame inserted should be a 3D\n\
 Each frame should have a shape equivalent to\n\
 ``(plane, height, width)``.\n\
 ");
+
+typedef struct {
+  PyObject_HEAD
+  boost::shared_ptr<bob::io::video::Writer> v;
+} PyBobIoVideoWriterObject;
+
+extern PyTypeObject PyBobIoVideoWriter_Type;
 
 /* How to create a new PyBobIoVideoWriterObject */
 static PyObject* PyBobIoVideoWriter_New(PyTypeObject* type, PyObject*, PyObject*) {
@@ -585,5 +591,3 @@ PyTypeObject PyBobIoVideoWriter_Type = {
     0,                                          /* tp_alloc */
     PyBobIoVideoWriter_New,                     /* tp_new */
 };
-
-#endif /* WITH_FFMPEG */

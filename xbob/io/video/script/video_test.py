@@ -22,14 +22,17 @@ import sys
 import argparse
 import numpy
 
+# from bob
+from xbob.io.base import save as save_to_file
+from xbob.io.base import create_directories_save
+
 # internal
-from .. import utils, create_directories_save
-from .. import save as save_to_file
-from .. import test_utils
+from .. import utils, test_utils
+from .. import supported_video_codecs, available_video_codecs
+from .. import supported_videowriter_formats, available_videowriter_formats
 
 def list_codecs(*args, **kwargs):
 
-  from ..version import supported_video_codecs, available_video_codecs
   CODECS = supported_video_codecs()
   ALL_CODECS = available_video_codecs()
 
@@ -44,7 +47,6 @@ def list_codecs(*args, **kwargs):
 
 def list_all_codecs(*args, **kwargs):
 
-  from ..version import supported_video_codecs, available_video_codecs
 
   CODECS = supported_video_codecs()
   ALL_CODECS = available_video_codecs()
@@ -60,7 +62,6 @@ def list_all_codecs(*args, **kwargs):
 
 def list_formats(*args, **kwargs):
 
-  from ..version import supported_videowriter_formats, available_videowriter_formats
   FORMATS = supported_videowriter_formats()
   ALL_FORMATS = available_videowriter_formats()
 
@@ -75,7 +76,6 @@ def list_formats(*args, **kwargs):
 
 def list_all_formats(*args, **kwargs):
 
-  from ..version import supported_videowriter_formats, available_videowriter_formats
   FORMATS = supported_videowriter_formats()
   ALL_FORMATS = available_videowriter_formats()
 
@@ -143,8 +143,8 @@ def user_video(original, max_frames, format, codec, filename):
     The name (path) of the file to use for encoding the test
   """
 
-  from .. import VideoReader, VideoWriter
-  vreader = VideoReader(original, check=True)
+  from .. import reader, writer
+  vreader = reader(original, check=True)
   orig = vreader[:max_frames]
 
   # rounding frame rate - some older codecs do not accept random frame rates
@@ -153,11 +153,11 @@ def user_video(original, max_frames, format, codec, filename):
     import math
     framerate = math.ceil(vreader.frame_rate)
 
-  vwriter = VideoWriter(filename, vreader.height, vreader.width,
+  vwriter = writer(filename, vreader.height, vreader.width,
       framerate, codec=codec, format=format, check=False)
   for k in orig: vwriter.append(k)
   del vwriter
-  return orig, framerate, VideoReader(filename, check=False)
+  return orig, framerate, reader(filename, check=False)
 
 def summarize(function, shape, framerate, format, codec, output=None):
   """Summarizes distortion patterns for a given set of video settings and
@@ -272,7 +272,6 @@ def detail(function, shape, framerate, format, codec, outdir):
 def main(user_input=None):
 
   from .._library import __version__
-  from ..version import supported_video_codecs, available_video_codecs, supported_videowriter_formats, available_videowriter_formats
   from .. import test as io_test
 
   parser = argparse.ArgumentParser(description=__doc__, epilog=__epilog__,

@@ -12,6 +12,8 @@ import functools
 import nose.plugins.skip
 from distutils.version import StrictVersion as SV
 
+from xbob.io.base.test_utils import datafile, temporary_filename
+
 # Here is a table of ffmpeg versions against libavcodec, libavformat and
 # libavutil versions
 ffmpeg_versions = {
@@ -34,51 +36,9 @@ def ffmpeg_version_lessthan(v):
   indicated as a string parameter.'''
 
   from .version import externals
-  if externals['FFmpeg']['ffmpeg'] == 'unavailable': return False
   avcodec_inst= SV(externals['FFmpeg']['avcodec'])
   avcodec_req = ffmpeg_versions[v][0]
   return avcodec_inst < avcodec_req
-
-def ffmpeg_found(version_geq=None):
-  '''Decorator to check if a codec is available before enabling a test
-
-  To use this, decorate your test routine with something like:
-
-  .. code-block:: python
-
-    @ffmpeg_found()
-
-  You can pass an optional string to require that the FFMpeg version installed
-  is greater or equal that version identifier. For example:
-
-  .. code-block:: python
-
-    @ffmpeg_found('0.10') #requires at least version 0.10
-
-  Versions you can test for are set in the ``ffmpeg_versions`` dictionary in
-  this module.
-  '''
-
-  def test_wrapper(test):
-
-    @functools.wraps(test)
-    def wrapper(*args, **kwargs):
-      try:
-        from .version import externals
-        avcodec_inst = SV(externals['FFmpeg']['avcodec'])
-        avformat_inst = SV(externals['FFmpeg']['avformat'])
-        avutil_inst = SV(externals['FFmpeg']['avutil'])
-        if version_geq is not None:
-          avcodec_req,avformat_req,avutil_req = ffmpeg_versions[version_geq]
-          if avcodec_inst < avcodec_req:
-            raise nose.plugins.skip.SkipTest('FFMpeg/libav version installed (%s) is smaller than required for this test (%s)' % (externals['FFmpeg']['ffmpeg'], version_geq))
-        return test(*args, **kwargs)
-      except KeyError:
-        raise nose.plugins.skip.SkipTest('FFMpeg was not available at compile time')
-
-    return wrapper
-
-  return test_wrapper
 
 def codec_available(codec):
   '''Decorator to check if a codec is available before enabling a test'''
@@ -87,7 +47,7 @@ def codec_available(codec):
 
     @functools.wraps(test)
     def wrapper(*args, **kwargs):
-      from .version import supported_video_codecs
+      from . import supported_video_codecs
       d = supported_video_codecs()
       if codec in d and d[codec]['encode'] and d[codec]['decode']:
         return test(*args, **kwargs)

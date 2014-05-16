@@ -14,6 +14,7 @@
 #include <xbob.io.base/api.h>
 
 #include "file.h"
+#include "cpp/utils.h"
 
 extern "C" {
 
@@ -25,10 +26,99 @@ extern "C" {
 #endif
 #include <libavutil/avutil.h>
 #include <libswscale/swscale.h>
-#if !HAVE_FFMPEG_AVCODEC_AVCODECID
+#if LIBAVCODEC_VERSION_INT < 0x363b64 //54.59.100 @ ffmpeg-1.0
 #  define AVCodecID CodecID
 #endif
 
+}
+
+static int dict_set(PyObject* d, const char* key, const char* value) {
+  PyObject* v = Py_BuildValue("s", value);
+  if (!v) return 0;
+  auto v_ = make_safe(v);
+  int retval = PyDict_SetItemString(d, key, v);
+  if (retval == 0) return 1; //all good
+  return 0; //a problem occurred
+}
+
+static int dict_steal(PyObject* d, const char* key, PyObject* value) {
+  if (!value) return 0;
+  auto value_ = make_safe(value);
+  int retval = PyDict_SetItemString(d, key, value);
+  if (retval == 0) return 1; //all good
+  return 0; //a problem occurred
+}
+
+/**
+ * Creates an str object, from a C or C++ string. Returns a **new
+ * reference**.
+ */
+static PyObject* make_object(const char* s) {
+  return Py_BuildValue("s", s);
+}
+
+static PyObject* make_object(bool v) {
+  if (v) Py_RETURN_TRUE;
+  Py_RETURN_FALSE;
+}
+
+static PyObject* make_object(unsigned int v) {
+  return Py_BuildValue("n", v);
+}
+
+static PyObject* make_object(double v) {
+  return PyFloat_FromDouble(v);
+}
+
+static PyObject* make_object(PyObject* v) {
+  Py_INCREF(v);
+  return v;
+}
+
+/**
+ * Sets a dictionary entry using a string as key and another one as value.
+ * Returns 1 in case of success, 0 in case of failure.
+ */
+template <typename T>
+int dict_set_string(boost::shared_ptr<PyObject> d, const char* key, T value) {
+  PyObject* pyvalue = make_object(value);
+  if (!pyvalue) return 0;
+  int retval = PyDict_SetItemString(d.get(), key, pyvalue);
+  Py_DECREF(pyvalue);
+  if (retval == 0) return 1; //all good
+  return 0; //a problem occurred
+}
+
+/**
+ * Sets a dictionary entry using a string as key and another one as value.
+ * Returns 1 in case of success, 0 in case of faiulre.
+ */
+template <typename T>
+int list_append(PyObject* l, T value) {
+  PyObject* pyvalue = make_object(value);
+  if (!pyvalue) return 0;
+  int retval = PyList_Append(l, pyvalue);
+  Py_DECREF(pyvalue);
+  if (retval == 0) return 1; //all good
+  return 0; //a problem occurred
+}
+
+/**
+ * A deleter, for shared_ptr's
+ */
+void pyobject_deleter(PyObject* o) {
+  Py_XDECREF(o);
+}
+
+/**
+ *  * Checks if it is a Python string for Python 2.x or 3.x
+ *   */
+int check_string(PyObject* o) {
+#     if PY_VERSION_HEX >= 0x03000000
+        return PyUnicode_Check(o);
+#     else
+              return PyString_Check(o);
+#     endif
 }
 
 /**
@@ -255,11 +345,11 @@ static PyObject* get_video_codecs(void (*f)(std::map<std::string, const AVCodec*
 }
 
 static PyObject* PyBobIoVideo_SupportedCodecs(PyObject*) {
-  return get_video_codecs(&bob::io::detail::ffmpeg::codecs_supported);
+  return get_video_codecs(&bob::io::video::codecs_supported);
 }
 
 static PyObject* PyBobIoVideo_AvailableCodecs(PyObject*) {
-  return get_video_codecs(&bob::io::detail::ffmpeg::codecs_installed);
+  return get_video_codecs(&bob::io::video::codecs_installed);
 }
 
 PyDoc_STRVAR(s_supported_codecs_str, "supported_video_codecs");
@@ -304,7 +394,7 @@ static PyObject* get_video_iformats(void (*f)(std::map<std::string, AVInputForma
 
     // get extensions
     std::vector<std::string> exts;
-    bob::io::detail::ffmpeg::tokenize_csv(k->second->extensions, exts);
+    bob::io::video::tokenize_csv(k->second->extensions, exts);
 
     PyObject* ext_list = PyList_New(0);
     if (!ext_list) return 0;
@@ -328,11 +418,11 @@ static PyObject* get_video_iformats(void (*f)(std::map<std::string, AVInputForma
 }
 
 static PyObject* PyBobIoVideo_SupportedInputFormats(PyObject*) {
-  return get_video_iformats(&bob::io::detail::ffmpeg::iformats_supported);
+  return get_video_iformats(&bob::io::video::iformats_supported);
 }
 
 static PyObject* PyBobIoVideo_AvailableInputFormats(PyObject*) {
-  return get_video_iformats(&bob::io::detail::ffmpeg::iformats_installed);
+  return get_video_iformats(&bob::io::video::iformats_installed);
 }
 
 PyDoc_STRVAR(s_supported_iformats_str, "supported_videoreader_formats");
@@ -359,8 +449,8 @@ necessarily supported** by this library.\n\
 static PyObject* get_video_oformats(bool supported) {
 
   std::map<std::string, AVOutputFormat*> m;
-  if (supported) bob::io::detail::ffmpeg::oformats_supported(m);
-  else bob::io::detail::ffmpeg::oformats_installed(m);
+  if (supported) bob::io::video::oformats_supported(m);
+  else bob::io::video::oformats_installed(m);
 
   PyObject* retval = PyDict_New();
   if (!retval) return 0;
@@ -380,7 +470,7 @@ static PyObject* get_video_oformats(bool supported) {
 
     // get extensions
     std::vector<std::string> exts;
-    bob::io::detail::ffmpeg::tokenize_csv(k->second->extensions, exts);
+    bob::io::video::tokenize_csv(k->second->extensions, exts);
 
     PyObject* ext_list = PyList_New(0);
     if (!ext_list) return 0;
@@ -413,7 +503,7 @@ static PyObject* get_video_oformats(bool supported) {
     /** get supported codec list **/
     if (supported) {
       std::vector<const AVCodec*> codecs;
-      bob::io::detail::ffmpeg::oformat_supported_codecs(k->second->name, codecs);
+      bob::io::video::oformat_supported_codecs(k->second->name, codecs);
 
       PyObject* supported_codecs = PyDict_New();
       if (!supported_codecs) return 0;
@@ -475,16 +565,16 @@ necessarily supported** by this library.\n\
  */
 static void list_formats(std::map<std::string, std::string>& formats) {
   std::map<std::string, AVInputFormat*> iformat;
-  bob::io::detail::ffmpeg::iformats_supported(iformat);
+  bob::io::video::iformats_supported(iformat);
   std::map<std::string, AVOutputFormat*> oformat;
-  bob::io::detail::ffmpeg::oformats_supported(oformat);
+  bob::io::video::oformats_supported(oformat);
 
   for (auto k=iformat.begin(); k!=iformat.end(); ++k) {
     auto o=oformat.find(k->first);
     if (o!=oformat.end()) {
       //format can be used for input and output
       std::vector<std::string> extensions;
-      bob::io::detail::ffmpeg::tokenize_csv(o->second->extensions, extensions);
+      bob::io::video::tokenize_csv(o->second->extensions, extensions);
       for (auto e=extensions.begin(); e!=extensions.end(); ++e) {
         std::string key = ".";
         key += *e;
@@ -561,6 +651,10 @@ static PyModuleDef module_definition = {
 };
 #endif
 
+extern PyTypeObject PyBobIoVideoReader_Type;
+extern PyTypeObject PyBobIoVideoReaderIterator_Type;
+extern PyTypeObject PyBobIoVideoWriter_Type;
+
 static PyObject* create_module (void) {
 
   PyBobIoVideoReader_Type.tp_new = PyType_GenericNew;
@@ -610,7 +704,7 @@ static PyObject* create_module (void) {
   std::map<std::string, std::string> formats;
   list_formats(formats);
   for (auto k=formats.begin(); k!=formats.end(); ++k) {
-    if (!PyBobIoCodec_Register(k->first, k->second, &make_file)) {
+    if (!PyBobIoCodec_Register(k->first.c_str(), k->second.c_str(), &make_file)) {
       PyErr_Print();
       //do not return 0, or we may crash badly
     }

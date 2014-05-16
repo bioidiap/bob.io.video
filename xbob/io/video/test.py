@@ -13,13 +13,15 @@ import numpy
 import nose.tools
 from . import test_utils
 
+from xbob.io.base import load
+
 # These are some global parameters for the test.
 INPUT_VIDEO = test_utils.datafile('test.mov', __name__)
 
 def test_codec_support():
 
   # Describes all encoders
-  from .version import describe_encoder, describe_decoder, supported_video_codecs
+  from . import describe_encoder, describe_decoder, supported_video_codecs
 
   supported = supported_video_codecs()
 
@@ -34,11 +36,10 @@ def test_codec_support():
     assert supported[codec]['encode']
     assert supported[codec]['decode']
 
-@test_utils.ffmpeg_found()
 def test_input_format_support():
 
   # Describes all encoders
-  from .version import supported_videoreader_formats
+  from . import supported_videoreader_formats
 
   supported = supported_videoreader_formats()
 
@@ -46,11 +47,10 @@ def test_input_format_support():
   for fmt in ('avi', 'mov', 'mp4'):
     assert fmt in supported
 
-@test_utils.ffmpeg_found()
 def test_output_format_support():
 
   # Describes all encoders
-  from .version import supported_videowriter_formats
+  from . import supported_videowriter_formats
 
   supported = supported_videowriter_formats()
 
@@ -58,12 +58,11 @@ def test_output_format_support():
   for fmt in ('avi', 'mov', 'mp4'):
     assert fmt in supported
 
-@test_utils.ffmpeg_found()
 def test_video_reader_attributes():
 
-  from . import VideoReader
+  from . import reader
 
-  iv = VideoReader(INPUT_VIDEO)
+  iv = reader(INPUT_VIDEO)
 
   assert isinstance(iv.filename, str)
   assert isinstance(iv.height, int)
@@ -88,20 +87,18 @@ def test_video_reader_attributes():
   nose.tools.eq_(len(iv.video_type[2]), len(iv.frame_type[2])+1)
   assert isinstance(iv.info, str)
 
-@test_utils.ffmpeg_found()
 def test_video_reader_str():
 
-  from . import VideoReader
+  from . import reader
 
-  iv = VideoReader(INPUT_VIDEO)
+  iv = reader(INPUT_VIDEO)
   assert repr(iv)
   assert str(iv)
 
-@test_utils.ffmpeg_found()
 def test_can_iterate():
 
-  from . import VideoReader
-  video = VideoReader(INPUT_VIDEO)
+  from . import reader
+  video = reader(INPUT_VIDEO)
   counter = 0
   for frame in video:
     assert isinstance(frame, numpy.ndarray)
@@ -113,22 +110,20 @@ def test_can_iterate():
 
   assert counter == len(video) #we have gone through all frames
 
-@test_utils.ffmpeg_found()
 def test_iteration():
 
-  from . import load, VideoReader
-  f = VideoReader(INPUT_VIDEO)
+  from . import reader
+  f = reader(INPUT_VIDEO)
   objs = load(INPUT_VIDEO)
 
   nose.tools.eq_(len(f), len(objs))
   for l, i in zip(objs, f):
     assert numpy.allclose(l, i)
 
-@test_utils.ffmpeg_found()
 def test_indexing():
 
-  from . import VideoReader
-  f = VideoReader(INPUT_VIDEO)
+  from . import reader
+  f = reader(INPUT_VIDEO)
 
   nose.tools.eq_(len(f), 375)
 
@@ -143,31 +138,28 @@ def test_indexing():
   assert numpy.allclose(f[len(f)-1], f[-1])
   assert numpy.allclose(f[len(f)-2], f[-2])
 
-@test_utils.ffmpeg_found()
 def test_slicing_empty():
 
-  from . import load, VideoReader
-  f = VideoReader(INPUT_VIDEO)
+  from . import reader
+  f = reader(INPUT_VIDEO)
 
   objs = f[1:1]
   assert objs.shape == tuple()
   assert objs.dtype == numpy.uint8
 
-@test_utils.ffmpeg_found()
 def test_slicing_0():
 
-  from . import load, VideoReader
-  f = VideoReader(INPUT_VIDEO)
+  from . import reader
+  f = reader(INPUT_VIDEO)
 
   objs = f[:]
   for i, k in enumerate(load(INPUT_VIDEO)):
     assert numpy.allclose(k, objs[i])
 
-@test_utils.ffmpeg_found()
 def test_slicing_1():
 
-  from . import VideoReader
-  f = VideoReader(INPUT_VIDEO)
+  from . import reader
+  f = reader(INPUT_VIDEO)
 
   s = f[3:10:2]
   nose.tools.eq_(len(s), 4)
@@ -176,11 +168,10 @@ def test_slicing_1():
   assert numpy.allclose(s[2], f[7])
   assert numpy.allclose(s[3], f[9])
 
-@test_utils.ffmpeg_found()
 def test_slicing_2():
 
-  from . import VideoReader
-  f = VideoReader(INPUT_VIDEO)
+  from . import reader
+  f = reader(INPUT_VIDEO)
 
   s = f[-10:-2:3]
   nose.tools.eq_(len(s), 3)
@@ -188,11 +179,10 @@ def test_slicing_2():
   assert numpy.allclose(s[1], f[len(f)-7])
   assert numpy.allclose(s[2], f[len(f)-4])
 
-@test_utils.ffmpeg_found()
 def test_slicing_3():
 
-  from . import VideoReader
-  f = VideoReader(INPUT_VIDEO)
+  from . import reader
+  f = reader(INPUT_VIDEO)
   objs = f.load()
 
   # get negative stepping slice
@@ -203,11 +193,10 @@ def test_slicing_3():
   assert numpy.allclose(s[2], f[14])
   assert numpy.allclose(s[3], f[11])
 
-@test_utils.ffmpeg_found()
 def test_slicing_4():
 
-  from . import VideoReader
-  f = VideoReader(INPUT_VIDEO)
+  from . import reader
+  f = reader(INPUT_VIDEO)
   objs = f[:21]
 
   # get all negative slice
@@ -219,23 +208,21 @@ def test_slicing_4():
   assert numpy.allclose(s[3], f[len(f)-19])
 
 
-@test_utils.ffmpeg_found()
 def test_can_use_array_interface():
 
-  from . import load, VideoReader
+  from . import reader
   array = load(INPUT_VIDEO)
-  iv = VideoReader(INPUT_VIDEO)
+  iv = reader(INPUT_VIDEO)
 
   for frame_id, frame in zip(range(array.shape[0]), iv.__iter__()):
     assert numpy.array_equal(array[frame_id,:,:,:], frame)
 
-@test_utils.ffmpeg_found()
 def test_video_reading_after_writing():
 
   from . import test_utils
   tmpname = test_utils.temporary_filename(suffix='.avi')
 
-  from . import VideoWriter, VideoReader
+  from . import writer, reader
 
   try:
 
@@ -243,14 +230,14 @@ def test_video_reading_after_writing():
     height = 20
     framerate = 24
 
-    outv = VideoWriter(tmpname, height, width, framerate)
+    outv = writer(tmpname, height, width, framerate)
     for i in range(0, 3):
       newframe = (numpy.random.random_integers(0,255,(3,height,width)))
       outv.append(newframe.astype('uint8'))
     outv.close()
 
     # this should not crash
-    i = VideoReader(tmpname)
+    i = reader(tmpname)
     nose.tools.eq_(i.number_of_frames, 3)
     nose.tools.eq_(i.width, width)
     nose.tools.eq_(i.height, height)
@@ -259,13 +246,12 @@ def test_video_reading_after_writing():
     # And we erase both files after this
     if os.path.exists(tmpname): os.unlink(tmpname)
 
-@test_utils.ffmpeg_found()
 def test_video_writer_close():
 
   from . import test_utils
   tmpname = test_utils.temporary_filename(suffix='.avi')
 
-  from . import VideoWriter, VideoReader
+  from . import writer, reader
 
   try:
 
@@ -273,7 +259,7 @@ def test_video_writer_close():
     height = 20
     framerate = 24
 
-    outv = VideoWriter(tmpname, height, width, framerate)
+    outv = writer(tmpname, height, width, framerate)
     for i in range(0, 3):
       newframe = (numpy.random.random_integers(0,255,(3,height,width)))
       outv.append(newframe.astype('uint8'))
@@ -293,13 +279,12 @@ def test_video_writer_close():
     # And we erase both files after this
     if os.path.exists(tmpname): os.unlink(tmpname)
 
-@test_utils.ffmpeg_found()
 def test_closed_video_writer_raises():
 
   from . import test_utils
   tmpname = test_utils.temporary_filename(suffix='.avi')
 
-  from . import VideoWriter
+  from . import writer
 
   try:
 
@@ -307,7 +292,7 @@ def test_closed_video_writer_raises():
     height = 20
     framerate = 24
 
-    outv = VideoWriter(tmpname, height, width, framerate)
+    outv = writer(tmpname, height, width, framerate)
     for i in range(0, 3):
       newframe = (numpy.random.random_integers(0,255,(3,height,width)))
       outv.append(newframe.astype('uint8'))

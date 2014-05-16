@@ -60,6 +60,7 @@ setup(
           "xbob/io/video/cpp/utils.cpp",
           "xbob/io/video/cpp/reader.cpp",
           "xbob/io/video/cpp/writer.cpp",
+          "xbob/io/video/bobskin.cpp",
           "xbob/io/video/reader.cpp",
           "xbob/io/video/writer.cpp",
           "xbob/io/video/file.cpp",
@@ -74,7 +75,7 @@ setup(
 
     entry_points={
       'console_scripts': [
-        'xbob_video_test.py = xbob.io.script.video_test:main',
+        'xbob_video_test.py = xbob.io.video.script.video_test:main',
         ],
       },
 

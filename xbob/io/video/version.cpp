@@ -46,32 +46,6 @@ static int dict_steal(PyObject* d, const char* key, PyObject* value) {
 }
 
 /**
- * Creates an str object, from a C or C++ string. Returns a **new
- * reference**.
- */
-static PyObject* make_object(const char* s) {
-  return Py_BuildValue("s", s);
-}
-
-static PyObject* make_object(bool v) {
-  if (v) Py_RETURN_TRUE;
-  Py_RETURN_FALSE;
-}
-
-static PyObject* make_object(unsigned int v) {
-  return Py_BuildValue("n", v);
-}
-
-static PyObject* make_object(double v) {
-  return PyFloat_FromDouble(v);
-}
-
-static PyObject* make_object(PyObject* v) {
-  Py_INCREF(v);
-  return v;
-}
-
-/**
  * Sets a dictionary entry using a string as key and another one as value.
  * Returns 1 in case of success, 0 in case of failure.
  */

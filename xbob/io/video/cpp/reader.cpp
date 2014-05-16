@@ -23,7 +23,7 @@
 #define AV_PIX_FMT_RGB24 PIX_FMT_RGB24
 #endif
 
-namespace bob::io::video {
+namespace bob { namespace io { namespace video {
 
   Reader::Reader(const std::string& filename, bool check) {
     open(filename, check);

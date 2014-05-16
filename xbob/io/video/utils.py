@@ -102,8 +102,8 @@ def color_distortion(shape, framerate, format, codec, filename):
   """
 
   length, height, width = shape
-  from . import VideoReader, VideoWriter
-  outv = VideoWriter(filename, height, width, framerate, codec=codec,
+  from . import reader, writer
+  outv = writer(filename, height, width, framerate, codec=codec,
       format=format, check=False)
   orig = []
   text_format = "%%0%dd" % len(str(length-1))
@@ -116,7 +116,7 @@ def color_distortion(shape, framerate, format, codec, filename):
     orig.append(newframe)
   outv.close()
   orig = numpy.array(orig, dtype='uint8')
-  return orig, framerate, VideoReader(filename, check=False)
+  return orig, framerate, reader(filename, check=False)
 
 def frameskip_detection(shape, framerate, format, codec, filename):
   """Returns distortion patterns for a set of frames with big numbers.
@@ -137,10 +137,10 @@ def frameskip_detection(shape, framerate, format, codec, filename):
   """
 
   length, height, width = shape
-  from . import VideoReader, VideoWriter
+  from . import reader, writer
   text_format = "%%0%dd" % len(str(length-1))
   fontsize = estimate_fontsize(height, width, text_format)
-  outv = VideoWriter(filename, height, width, framerate, codec=codec,
+  outv = writer(filename, height, width, framerate, codec=codec,
       format=format, check=False)
   orig = []
   for i in range(0, length):
@@ -150,7 +150,7 @@ def frameskip_detection(shape, framerate, format, codec, filename):
     orig.append(newframe)
   outv.close()
   orig = numpy.array(orig, dtype='uint8')
-  return orig, framerate, VideoReader(filename, check=False)
+  return orig, framerate, reader(filename, check=False)
 
 def quality_degradation(shape, framerate, format, codec, filename):
   """Returns noise patterns for a set of frames.
@@ -171,11 +171,11 @@ def quality_degradation(shape, framerate, format, codec, filename):
   """
 
   length, height, width = shape
-  from . import VideoReader, VideoWriter
+  from . import reader, writer
   text_format = "%%0%dd" % len(str(length-1))
   fontsize = estimate_fontsize(height, width, text_format)
   fontsize = int(fontsize/4)
-  outv = VideoWriter(filename, height, width, framerate, codec=codec,
+  outv = writer(filename, height, width, framerate, codec=codec,
       format=format, check=False)
   orig = []
   for i in range(0, length):
@@ -185,7 +185,7 @@ def quality_degradation(shape, framerate, format, codec, filename):
     orig.append(newframe)
   outv.close()
   orig = numpy.array(orig, dtype='uint8')
-  return orig, framerate, VideoReader(filename, check=False)
+  return orig, framerate, reader(filename, check=False)
 
 def is_string(s):
   """Returns ``True`` if the given object is a string

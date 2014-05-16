@@ -16,3 +16,4 @@ dist
 build
 *.egg
 src/
+opsnr.stt
