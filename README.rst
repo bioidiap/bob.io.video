@@ -26,6 +26,46 @@ Installation
 Install it through normal means, via PyPI or use ``zc.buildout`` to bootstrap
 the package and run test units.
 
+External Library Requirements
+=============================
+
+To properly install this package, you will need the following C/C++ components
+pre-installed:
+
+1. ``bob-io >= 2.0.0a2``
+2. ``libavformat >= 52.31.0``
+3. ``libavcodec >= 52.20.0``
+4. ``libavutil >= 49.15.0``
+5. ``libswscale >= 0.7.1``
+
+.. note::
+
+   ``libavformat``, ``libavcodec``, ``libavutil`` and ``libswscale`` are
+   components which are part of `FFmpeg`_ or `libav`_. We support any of these
+   two.
+
+   The minimum version for `FFmpeg`_ is ``0.5``, while the minimum version for
+   `libav`_ should be ``0.8``.
+
+To test for the availability of the libraries listed above, use the command
+``pkg-config``. For example::
+
+  $ pkg-config --modversion libavformat
+  55.33.100
+  $ pkg-config --modversion bob-io
+  2.0.0a3
+
+If any of the components is not installed on paths accessible by
+``pkg-config``, you have two options:
+
+1. Set the environment variable ``PKG_CONFIG_PATH`` so that ``.pc`` files for
+   each of those distributions can be properly located (see ``man pkg-config``
+   for details);
+
+2. If you are using ``zc.buildout`` to setup your working environment, you can
+   use the buildout variable ``prefixes`` to define the path to the
+   installation area for your external packages.
+
 Documentation
 -------------
 
@@ -86,3 +126,7 @@ configuration found on the root of the package::
 
 Tweak the options in ``buildout.cfg`` to disable/enable verbosity and debug
 builds.
+
+.. Place here references to all citations in lower case
+.. _ffmpeg: http://ffmpeg.org
+.. _libav: http://libav.org
