@@ -681,8 +681,10 @@ static PyObject* create_module (void) {
   Py_INCREF(&PyBobIoVideoReader_Type);
   if (PyModule_AddObject(m, "reader", (PyObject *)&PyBobIoVideoReader_Type) < 0) return 0;
 
+  /** not required for iterators
   Py_INCREF(&PyBobIoVideoReaderIterator_Type);
-  if (PyModule_AddObject(m, "reader.iter", (PyObject *)&PyBobIoVideoReaderIterator_Type) < 0) return 0;
+  if (PyModule_AddObject(m, "__reader_iter__", (PyObject *)&PyBobIoVideoReaderIterator_Type) < 0) return 0;
+  **/
 
   Py_INCREF(&PyBobIoVideoWriter_Type);
   if (PyModule_AddObject(m, "writer", (PyObject *)&PyBobIoVideoWriter_Type) < 0) return 0;

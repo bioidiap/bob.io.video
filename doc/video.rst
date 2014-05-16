@@ -40,13 +40,13 @@ Codec and Format Availability
 -----------------------------
 
 To get a list of all FFmpeg_ (or libav_) supported formats for a given build of
-|project|, use the ``bob_video_test.py`` application:
+|project|, use the ``xbob_video_test.py`` application:
 
 .. code-block:: sh
 
-  $ bob_video_test.py --list-all-codecs # lists all codecs available
+  $ xbob_video_test.py --list-all-codecs # lists all codecs available
 
-  $ bob_video_test.py --list-all-formats # lists all formats available
+  $ xbob_video_test.py --list-all-formats # lists all formats available
 
 These listings represent all that is compiled with your current installation of
 FFmpeg_ or libav_. To list supported formats and codecs by |project| use
@@ -54,16 +54,16 @@ another set of command-line options:
 
 .. code-block:: sh
 
-  $ bob_video_test.py --list-codecs # lists all codecs currently supported
+  $ xbob_video_test.py --list-codecs # lists all codecs currently supported
 
-  $ bob_video_test.py --list-formats # lists all formats currently supported
+  $ xbob_video_test.py --list-formats # lists all formats currently supported
 
-The program ``bob_video_test.py`` can be used to run a sequence of tests using
+The program ``xbob_video_test.py`` can be used to run a sequence of tests using
 all combinations of *supported* formats and tests:
 
 .. code-block:: sh
 
-  $ bob_video_test.py # runs all tests
+  $ xbob_video_test.py # runs all tests
 
 This will run through all combinations of supported codecs and formats and will
 report average distortion figures for each of 4 different tests, which exercise
@@ -72,7 +72,7 @@ output:
 
 .. code-block:: text
 
-  Video Encoding/Decoding Test Tool v1.2.0a0 (bob_video_test)
+  Video Encoding/Decoding Test Tool v1.2.0a0 (xbob_video_test)
   Settings:
     Width    : 128 pixels
     Height   : 128 pixels
@@ -120,7 +120,7 @@ change this behavior with the option ``--user-frames``. Here is an example:
 
 .. code-block:: sh
 
-  $ bob_video_test.py --user-video=test_sample.avi
+  $ xbob_video_test.py --user-video=test_sample.avi
 
 All tests are executed by default, on all combination of formats and codecs.
 That can be long. You can limit the test execution by properly choosing the
