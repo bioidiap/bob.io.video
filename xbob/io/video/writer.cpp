@@ -5,7 +5,6 @@
  * @brief Bindings to bob::io::video::Writer
  */
 
-#include "cpp/writer.h"
 #include "bobskin.h"
 
 #include <boost/make_shared.hpp>
@@ -14,6 +13,8 @@
 #include <xbob.blitz/cleanup.h>
 #include <xbob.io.base/api.h>
 #include <stdexcept>
+
+#include "cpp/writer.h"
 
 #define VIDEOWRITER_NAME "writer"
 PyDoc_STRVAR(s_videowriter_str, XBOB_EXT_MODULE_PREFIX "." VIDEOWRITER_NAME);

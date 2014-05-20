@@ -5,7 +5,6 @@
  * @brief Bindings to bob::io::video::Reader
  */
 
-#include "cpp/reader.h"
 #include "bobskin.h"
 
 #include <boost/make_shared.hpp>
@@ -14,6 +13,8 @@
 #include <xbob.blitz/cleanup.h>
 #include <xbob.io.base/api.h>
 #include <stdexcept>
+
+#include "cpp/reader.h"
 
 #define VIDEOREADER_NAME "reader"
 PyDoc_STRVAR(s_videoreader_str, XBOB_EXT_MODULE_PREFIX "." VIDEOREADER_NAME);
