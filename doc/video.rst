@@ -40,13 +40,13 @@ Codec and Format Availability
 -----------------------------
 
 To get a list of all FFmpeg_ (or libav_) supported formats for a given build of
-|project|, use the ``xbob_video_test.py`` application:
+|project|, use the ``bob_video_test.py`` application:
 
 .. code-block:: sh
 
-  $ xbob_video_test.py --list-all-codecs # lists all codecs available
+  $ bob_video_test.py --list-all-codecs # lists all codecs available
 
-  $ xbob_video_test.py --list-all-formats # lists all formats available
+  $ bob_video_test.py --list-all-formats # lists all formats available
 
 These listings represent all that is compiled with your current installation of
 FFmpeg_ or libav_. To list supported formats and codecs by |project| use
@@ -54,16 +54,16 @@ another set of command-line options:
 
 .. code-block:: sh
 
-  $ xbob_video_test.py --list-codecs # lists all codecs currently supported
+  $ bob_video_test.py --list-codecs # lists all codecs currently supported
 
-  $ xbob_video_test.py --list-formats # lists all formats currently supported
+  $ bob_video_test.py --list-formats # lists all formats currently supported
 
-The program ``xbob_video_test.py`` can be used to run a sequence of tests using
+The program ``bob_video_test.py`` can be used to run a sequence of tests using
 all combinations of *supported* formats and tests:
 
 .. code-block:: sh
 
-  $ xbob_video_test.py # runs all tests
+  $ bob_video_test.py # runs all tests
 
 This will run through all combinations of supported codecs and formats and will
 report average distortion figures for each of 4 different tests, which exercise
@@ -72,7 +72,7 @@ output:
 
 .. code-block:: text
 
-  Video Encoding/Decoding Test Tool v1.2.0a0 (xbob_video_test)
+  Video Encoding/Decoding Test Tool v1.2.0a0 (bob_video_test)
   Settings:
     Width    : 128 pixels
     Height   : 128 pixels
@@ -120,7 +120,7 @@ change this behavior with the option ``--user-frames``. Here is an example:
 
 .. code-block:: sh
 
-  $ xbob_video_test.py --user-video=test_sample.avi
+  $ bob_video_test.py --user-video=test_sample.avi
 
 All tests are executed by default, on all combination of formats and codecs.
 That can be long. You can limit the test execution by properly choosing the
@@ -131,7 +131,7 @@ example:
 
   # execute only the user video test with a user provided video and
   # using the H.264 built-in codec and a MOV output file format.
-  $ xbob_video_test.py --format mov --codec h264 --user-video=test_sample.avi -- user
+  $ bob_video_test.py --format mov --codec h264 --user-video=test_sample.avi -- user
 
 .. note::
 
@@ -142,8 +142,8 @@ example:
 
   .. code-block:: python
 
-    import xbob.io
-    xbob.io.supported_videowriter_formats()['mp4']['supported_codecs'].keys()
+    import bob.io
+    bob.io.supported_videowriter_formats()['mp4']['supported_codecs'].keys()
     ['h264', 'libx264', 'mjpeg', 'mpeg1video']
 
   You can see from the output command that only 4 codecs are supported by the
@@ -153,7 +153,7 @@ You can test new combinations of formats and codecs which are not currently
 supported by |project|, as long as they are supported by the underlying FFmpeg_
 or libav_ installations. In this case, just specify the format and/or codec
 names using ``--format`` and ``--codec`` options in the application
-``xbob_video_test.py``. The advantage of using *supported* formats and codecs is
+``bob_video_test.py``. The advantage of using *supported* formats and codecs is
 that we make sure a minimal distortion figure is respected in all platform
 nightly builds, with our unit and integration tests. We cannot, currently,
 test all possible combinations of codecs and formats.
@@ -165,7 +165,7 @@ One important aspect when working with videos is to know there will be some
 lossy compression applied to the output. This means you will **loose**
 information when re-encoding. When working with videos, you will want to choose
 the combination of format and codec that will work well accross different
-platforms. We recommend to run ``xbob_video_test.py`` with a few of your video
+platforms. We recommend to run ``bob_video_test.py`` with a few of your video
 inputs to make sure they can be decoded with low distortion where you plan to
 work.
 
@@ -185,7 +185,7 @@ executed:
 
 .. code-block:: sh
 
-  $ xbob_video_test.py
+  $ bob_video_test.py
 
 Idiap Linux (Xubuntu), version 12.10 + libav 0.8.3
 ==================================================

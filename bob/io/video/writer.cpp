@@ -9,15 +9,15 @@
 
 #include <boost/make_shared.hpp>
 #include <numpy/arrayobject.h>
-#include <xbob.blitz/cppapi.h>
-#include <xbob.blitz/cleanup.h>
-#include <xbob.io.base/api.h>
+#include <bob.blitz/cppapi.h>
+#include <bob.blitz/cleanup.h>
+#include <bob.io.base/api.h>
 #include <stdexcept>
 
 #include "cpp/writer.h"
 
 #define VIDEOWRITER_NAME "writer"
-PyDoc_STRVAR(s_videowriter_str, XBOB_EXT_MODULE_PREFIX "." VIDEOWRITER_NAME);
+PyDoc_STRVAR(s_videowriter_str, BOB_EXT_MODULE_PREFIX "." VIDEOWRITER_NAME);
 
 PyDoc_STRVAR(s_videowriter_doc,
 "writer(filename, height, width, [framerate=25., [bitrate=1500000., [gop=12, [codec='', [format='', [check=True]) -> new writer\n\

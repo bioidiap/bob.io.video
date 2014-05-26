@@ -26,8 +26,8 @@ install:
   - "python bootstrap.py"
   - "CFLAGS=-coverage ./bin/buildout"
 script:
-  - "./bin/python -c 'from xbob.io.video import get_config; print(get_config())'"
-  - "./bin/coverage run --source=xbob.io.video ./bin/nosetests -sv"
+  - "./bin/python -c 'from bob.io.video import get_config; print(get_config())'"
+  - "./bin/coverage run --source=bob.io.video ./bin/nosetests -sv"
   - "./bin/sphinx-build -b doctest doc sphinx"
   - "./bin/sphinx-build -b html doc sphinx"
 after_success:

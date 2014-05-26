@@ -14,7 +14,7 @@
 #include <bob/core/array.h>
 
 extern "C" {
-#include <xbob.blitz/capi.h>
+#include <bob.blitz/capi.h>
 }
 
 

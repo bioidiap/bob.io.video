@@ -9,15 +9,15 @@
 
 #include <boost/make_shared.hpp>
 #include <numpy/arrayobject.h>
-#include <xbob.blitz/capi.h>
-#include <xbob.blitz/cleanup.h>
-#include <xbob.io.base/api.h>
+#include <bob.blitz/capi.h>
+#include <bob.blitz/cleanup.h>
+#include <bob.io.base/api.h>
 #include <stdexcept>
 
 #include "cpp/reader.h"
 
 #define VIDEOREADER_NAME "reader"
-PyDoc_STRVAR(s_videoreader_str, XBOB_EXT_MODULE_PREFIX "." VIDEOREADER_NAME);
+PyDoc_STRVAR(s_videoreader_str, BOB_EXT_MODULE_PREFIX "." VIDEOREADER_NAME);
 
 PyDoc_STRVAR(s_videoreader_doc,
 "reader(filename, [check=True]) -> new reader\n\
@@ -41,7 +41,7 @@ implementation uses `FFmpeg <http://ffmpeg.org>`_ (or\n\
 `libav <http://libav.org>`_ if FFmpeg is not available) which is\n\
 a stable freely available video encoding and decoding library,\n\
 designed specifically for these tasks. You can read an entire\n\
-video in memory by using the :py:meth:`xbob.io.video.reader.load`\n\
+video in memory by using the :py:meth:`bob.io.video.reader.load`\n\
 method or use iterators to read it frame by frame and avoid\n\
 overloading your machine\'s memory. The maximum precision data\n\
 `FFmpeg`_ will yield is a 24-bit (8-bit per band) representation\n\
@@ -563,7 +563,7 @@ static PyMappingMethods PyBobIoVideoReader_Mapping = {
  *****************************************/
 
 #define VIDEOITERTYPE_NAME "reader.iter"
-PyDoc_STRVAR(s_videoreaderiterator_str, XBOB_EXT_MODULE_PREFIX "." VIDEOITERTYPE_NAME);
+PyDoc_STRVAR(s_videoreaderiterator_str, BOB_EXT_MODULE_PREFIX "." VIDEOITERTYPE_NAME);
 
 typedef struct {
   PyObject_HEAD

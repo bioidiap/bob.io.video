@@ -4,11 +4,11 @@
 # Mon 16 Apr 08:18:08 2012 CEST
 
 from setuptools import setup, find_packages, dist
-dist.Distribution(dict(setup_requires=['xbob.blitz', 'xbob.io.base']))
-from xbob.blitz.extension import Extension
-import xbob.io.base
+dist.Distribution(dict(setup_requires=['bob.blitz', 'bob.io.base']))
+from bob.blitz.extension import Extension
+import bob.io.base
 
-include_dirs = [xbob.io.base.get_include()]
+include_dirs = [bob.io.base.get_include()]
 
 packages = [
   'boost',
@@ -32,10 +32,10 @@ except pkg_resources.DistributionNotFound as e:
 
 setup(
 
-    name='xbob.io.video',
+    name='bob.io.video',
     version=version,
     description='Video I/O support for Bob',
-    url='http://github.com/bioidiap/xbob.io.video',
+    url='http://github.com/bioidiap/bob.io.video',
     license='BSD',
     author='Andre Anjos',
     author_email='andre.anjos@idiap.ch',
@@ -47,19 +47,19 @@ setup(
 
     install_requires=[
       'setuptools',
-      'xbob.blitz',
-      'xbob.io.base',
+      'bob.blitz',
+      'bob.io.base',
     ] + pil_or_pillow,
 
     namespace_packages=[
-      "xbob",
-      "xbob.io",
+      "bob",
+      "bob.io",
       ],
 
     ext_modules = [
-      Extension("xbob.io.video.version",
+      Extension("bob.io.video.version",
         [
-          "xbob/io/video/version.cpp",
+          "bob/io/video/version.cpp",
           ],
         packages = packages,
         boost_modules = ['system'],
@@ -67,16 +67,16 @@ setup(
         version = version,
         define_macros = [('__STDC_CONSTANT_MACROS', None)],
         ),
-      Extension("xbob.io.video._library",
+      Extension("bob.io.video._library",
         [
-          "xbob/io/video/cpp/utils.cpp",
-          "xbob/io/video/cpp/reader.cpp",
-          "xbob/io/video/cpp/writer.cpp",
-          "xbob/io/video/bobskin.cpp",
-          "xbob/io/video/reader.cpp",
-          "xbob/io/video/writer.cpp",
-          "xbob/io/video/file.cpp",
-          "xbob/io/video/main.cpp",
+          "bob/io/video/cpp/utils.cpp",
+          "bob/io/video/cpp/reader.cpp",
+          "bob/io/video/cpp/writer.cpp",
+          "bob/io/video/bobskin.cpp",
+          "bob/io/video/reader.cpp",
+          "bob/io/video/writer.cpp",
+          "bob/io/video/file.cpp",
+          "bob/io/video/main.cpp",
           ],
         packages = packages,
         include_dirs = include_dirs,
@@ -87,7 +87,7 @@ setup(
 
     entry_points={
       'console_scripts': [
-        'xbob_video_test.py = xbob.io.video.script.video_test:main',
+        'bob_video_test.py = bob.io.video.script.video_test:main',
         ],
       },
 

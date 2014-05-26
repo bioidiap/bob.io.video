@@ -23,8 +23,8 @@ import argparse
 import numpy
 
 # from bob
-from xbob.io.base import save as save_to_file
-from xbob.io.base import create_directories_save
+from bob.io.base import save as save_to_file
+from bob.io.base import create_directories_save
 
 # internal
 from .. import utils, test_utils

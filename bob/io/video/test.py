@@ -13,7 +13,7 @@ import numpy
 import nose.tools
 from . import test_utils
 
-from xbob.io.base import load
+from bob.io.base import load
 
 # These are some global parameters for the test.
 INPUT_VIDEO = test_utils.datafile('test.mov', __name__)

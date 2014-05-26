@@ -1,5 +1,5 @@
 include LICENSE README.rst bootstrap.py buildout.cfg
 recursive-include doc conf.py *.rst
-recursive-include xbob *.cpp *.h
-recursive-include xbob/io/video/data *.*
-recursive-include xbob/io/video/fonts *.txt *.ttf
+recursive-include bob *.cpp *.h
+recursive-include bob/io/video/data *.*
+recursive-include bob/io/video/fonts *.txt *.ttf

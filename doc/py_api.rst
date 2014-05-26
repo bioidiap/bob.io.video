@@ -7,7 +7,7 @@
 ============
 
 This section includes information for using the pure Python API of
-``xbob.io.video``.
+``bob.io.video``.
 
-.. automodule:: xbob.io.video
+.. automodule:: bob.io.video
 

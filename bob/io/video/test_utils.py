@@ -5,14 +5,14 @@
 #
 # Copyright (C) Idiap Research Institute, Martigny, Switzerland
 
-"""Re-usable decorators and utilities for xbob test code
+"""Re-usable decorators and utilities for bob test code
 """
 
 import functools
 import nose.plugins.skip
 from distutils.version import StrictVersion as SV
 
-from xbob.io.base.test_utils import datafile, temporary_filename
+from bob.io.base.test_utils import datafile, temporary_filename
 
 # Here is a table of ffmpeg versions against libavcodec, libavformat and
 # libavutil versions

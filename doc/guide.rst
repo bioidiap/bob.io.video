@@ -5,8 +5,8 @@
 .. testsetup:: *
 
    import numpy
-   import xbob.io.base
-   import xbob.io.video
+   import bob.io.base
+   import bob.io.video
    import tempfile
    import os
 
@@ -24,24 +24,24 @@ dealing with other data files in |project|:
 .. doctest::
 
   >>> my_video = numpy.random.random_integers(0,255,(30,3,256,256))
-  >>> xbob.io.base.save(my_video.astype('uint8'), 'testvideo.avi') # saving the video avi format with a default codec
-  >>> my_video_copy = xbob.io.base.load('testvideo.avi')
+  >>> bob.io.base.save(my_video.astype('uint8'), 'testvideo.avi') # saving the video avi format with a default codec
+  >>> my_video_copy = bob.io.base.load('testvideo.avi')
 
 Video reading and writing is performed using an `FFmpeg`_ (or `libav`_ if
-`FFmpeg`_ is not available) bridge. |project|'s :py:meth:`xbob.io.base.save`
+`FFmpeg`_ is not available) bridge. |project|'s :py:meth:`bob.io.base.save`
 method will allow you to choose the output format with the same extension
 mechanism as mentioned earlier. `FFmpeg`_ will then choose a default codec for
 the format and perform encoding. The output file can be as easily loaded using
-:py:meth:`xbob.io.base.load`.
+:py:meth:`bob.io.base.load`.
 
 For finer control over the loading, saving, format and codecs used for a
 specific encoding or decoding operation, you must directly use either
-:py:class:`xbob.io.video.reader` or :py:class:`xbob.io.video.writer`
+:py:class:`bob.io.video.reader` or :py:class:`bob.io.video.writer`
 classes. For example, it is possible to use
-:py:class:`xbob.io.video.reader` to read videos frame by frame and avoid
+:py:class:`bob.io.video.reader` to read videos frame by frame and avoid
 overloading your machine's memory. In the following example you can see how to
-create a video, save it using the class :py:class:`xbob.io.video.writer`
-and load it again using the class :py:class:`xbob.io.video.reader`. The
+create a video, save it using the class :py:class:`bob.io.video.writer`
+and load it again using the class :py:class:`bob.io.video.reader`. The
 created video will have 30 frames generated randomly.
 
 .. note::
@@ -53,12 +53,12 @@ created video will have 30 frames generated randomly.
 
   >>> width = 50; height = 50;
   >>> framerate = 24
-  >>> outv = xbob.io.video.writer('testvideo.avi', height, width, framerate, codec='mpeg1video') # output video
+  >>> outv = bob.io.video.writer('testvideo.avi', height, width, framerate, codec='mpeg1video') # output video
   >>> for i in range(0, 30):
   ...   newframe = (numpy.random.random_integers(0,255,(3,height,width)))
   ...   outv.append(newframe.astype('uint8'))
   >>> outv.close()
-  >>> input = xbob.io.video.reader('testvideo.avi')
+  >>> input = bob.io.video.reader('testvideo.avi')
   >>> input.number_of_frames
   30
   >>> inv = input.load()
