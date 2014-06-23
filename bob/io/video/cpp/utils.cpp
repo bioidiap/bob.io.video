@@ -499,7 +499,7 @@ AVCodec* bob::io::video::find_decoder(const std::string& filename,
   return retval;
 }
 
-#if LIBAVFORMAT_VERSION_INT < 0x353c64 // 53.60.100 @ ffmpeg-0.10
+#if !defined(HAVE_AVFORMAT_ALLOC_OUTPUT_CONTEXT2) || LIBAVFORMAT_VERSION_INT < 0x353c64 // 53.60.100 @ ffmpeg-0.10
 
 /**
  * This method was copied from ffmpeg-0.8 and is used in case it is not defined

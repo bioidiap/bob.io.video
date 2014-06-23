@@ -6,6 +6,7 @@
 from setuptools import setup, find_packages, dist
 dist.Distribution(dict(setup_requires=['bob.blitz', 'bob.io.base']))
 from bob.blitz.extension import Extension
+from bob.extension import pkgconfig
 import bob.io.base
 
 include_dirs = [bob.io.base.get_include()]
@@ -30,6 +31,21 @@ try:
 except pkg_resources.DistributionNotFound as e:
   pil_or_pillow.append('pillow')
 
+define_macros = [('__STDC_CONSTANT_MACROS', None)]
+
+# Checks if we have avformat_alloc_output_context2 defined in libavformat
+libavformat_pkg = pkgconfig('libavformat >= 52.31.0')
+import ctypes
+import ctypes.util
+lib = ctypes.util.find_library(libavformat_pkg.libraries()[0])
+if lib is not None:
+  try:
+    dll = ctypes.CDLL(lib)
+    if hasattr(dll, 'avformat_alloc_output_context2'):
+      define_macros.append(('HAVE_AVFORMAT_ALLOC_OUTPUT_CONTEXT2', None))
+  except OSError:
+    pass #ignore it
+
 setup(
 
     name='bob.io.video',
@@ -44,6 +60,7 @@ setup(
 
     packages=find_packages(),
     include_package_data=True,
+    zip_safe=False,
 
     install_requires=[
       'setuptools',
@@ -65,7 +82,7 @@ setup(
         boost_modules = ['system'],
         include_dirs = include_dirs,
         version = version,
-        define_macros = [('__STDC_CONSTANT_MACROS', None)],
+        define_macros = define_macros,
         ),
       Extension("bob.io.video._library",
         [
@@ -81,7 +98,7 @@ setup(
         packages = packages,
         include_dirs = include_dirs,
         version = version,
-        define_macros = [('__STDC_CONSTANT_MACROS', None)],
+        define_macros = define_macros,
         ),
       ],
 
