@@ -14,7 +14,7 @@
 #include <bob.io.base/api.h>
 #include <stdexcept>
 
-#include "cpp/reader.h"
+#include <bob.io.video/reader.h>
 
 #define VIDEOREADER_NAME "reader"
 PyDoc_STRVAR(s_videoreader_str, BOB_EXT_MODULE_PREFIX "." VIDEOREADER_NAME);
@@ -350,7 +350,7 @@ static PyObject* PyBobIoVideoReader_Load(PyBobIoVideoReaderObject* self, PyObjec
   bool raise_on_error = false;
   if (raise && PyObject_IsTrue(raise)) raise_on_error = true;
 
-  const bob::core::array::typeinfo& info = self->v->video_type();
+  const bob::io::base::array::typeinfo& info = self->v->video_type();
 
   npy_intp shape[NPY_MAXDIMS];
   for (size_t k=0; k<info.nd; ++k) shape[k] = info.shape[k];
@@ -429,7 +429,7 @@ static PyObject* PyBobIoVideoReader_GetIndex (PyBobIoVideoReaderObject* self, Py
     return 0;
   }
 
-  const bob::core::array::typeinfo& info = self->v->frame_type();
+  const bob::io::base::array::typeinfo& info = self->v->frame_type();
 
   npy_intp shape[NPY_MAXDIMS];
   for (size_t k=0; k<info.nd; ++k) shape[k] = info.shape[k];
@@ -472,7 +472,7 @@ static PyObject* PyBobIoVideoReader_GetSlice (PyBobIoVideoReaderObject* self, Py
         self->v->numberOfFrames(), &start, &stop, &step, &slicelength) < 0) return 0;
 
   //creates the return array
-  const bob::core::array::typeinfo& info = self->v->frame_type();
+  const bob::io::base::array::typeinfo& info = self->v->frame_type();
 
   int type_num = PyBobIo_AsTypenum(info.dtype);
   if (type_num == NPY_NOTYPE) return 0; ///< failure
@@ -598,7 +598,7 @@ static PyObject* PyBobIoVideoReaderIterator_Next (PyBobIoVideoReaderIteratorObje
     return 0;
   }
 
-  const bob::core::array::typeinfo& info = self->pyreader->v->frame_type();
+  const bob::io::base::array::typeinfo& info = self->pyreader->v->frame_type();
 
   npy_intp shape[NPY_MAXDIMS];
   for (size_t k=0; k<info.nd; ++k) shape[k] = info.shape[k];

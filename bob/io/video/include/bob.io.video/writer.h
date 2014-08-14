@@ -11,7 +11,7 @@
 #ifndef BOB_IO_VIDEO_WRITER_H
 #define BOB_IO_VIDEO_WRITER_H
 
-#include <bob/core/array.h>
+#include <bob.io.base/array.h>
 #include "utils.h"
 
 namespace bob { namespace io { namespace video {
@@ -133,13 +133,13 @@ namespace bob { namespace io { namespace video {
       /**
        * Compatibility layer type information
        */
-      const bob::core::array::typeinfo& video_type() const
+      const bob::io::base::array::typeinfo& video_type() const
       { return m_typeinfo_video; }
 
       /**
        * Compatibility layer type information
        */
-      const bob::core::array::typeinfo& frame_type() const
+      const bob::io::base::array::typeinfo& frame_type() const
       { return m_typeinfo_frame; }
 
       /**
@@ -166,10 +166,10 @@ namespace bob { namespace io { namespace video {
 
       /**
        * Writes a set of frames to the file. The frame set should be setup as a
-       * bob::core::array::interface organized this way: (frame-number,
+       * bob::io::base::array::interface organized this way: (frame-number,
        * RGB color-bands, height, width) or (RGB color-bands, height, width).
        */
-      void append(const bob::core::array::interface& data);
+      void append(const bob::io::base::array::interface& data);
 
     private: //not implemented
 
@@ -196,8 +196,8 @@ namespace bob { namespace io { namespace video {
       size_t m_gop;
       std::string m_codecname;
       std::string m_formatname;
-      bob::core::array::typeinfo m_typeinfo_video;
-      bob::core::array::typeinfo m_typeinfo_frame;
+      bob::io::base::array::typeinfo m_typeinfo_video;
+      bob::io::base::array::typeinfo m_typeinfo_frame;
       size_t m_current_frame;
 
   };

@@ -4,16 +4,16 @@
 # Mon 16 Apr 08:18:08 2012 CEST
 
 from setuptools import setup, find_packages, dist
-dist.Distribution(dict(setup_requires=['bob.blitz', 'bob.io.base']))
-from bob.blitz.extension import Extension
+dist.Distribution(dict(setup_requires=['bob.blitz', 'bob.core', 'bob.io.base']))
+from bob.blitz.extension import Extension, Library, build_ext
 from bob.extension import pkgconfig
-import bob.io.base
 
-include_dirs = [bob.io.base.get_include()]
+import os
+package_dir = os.path.dirname(os.path.realpath(__file__))
+target_dir = os.path.join(package_dir, 'bob', 'io', 'video')
 
 packages = [
   'boost',
-  'bob-io >= 2.0.0a2',
   'libavformat >= 52.31.0',
   'libavcodec >= 52.20.0',
   'libavutil >= 49.15.0',
@@ -80,10 +80,25 @@ setup(
           ],
         packages = packages,
         boost_modules = ['system'],
-        include_dirs = include_dirs,
+        bob_packages = ['bob.core', 'bob.io.base'],
         version = version,
         define_macros = define_macros,
         ),
+
+      Library("bob_io_video",
+        [
+          "bob/io/video/cpp/utils.cpp",
+          "bob/io/video/cpp/reader.cpp",
+          "bob/io/video/cpp/writer.cpp",
+        ],
+        package_directory = package_dir,
+        target_directory = target_dir,
+        define_macros = define_macros,
+        version = version,
+        bob_packages = ['bob.core', 'bob.io.base'],
+        packages = packages,
+      ),
+
       Extension("bob.io.video._library",
         [
           "bob/io/video/cpp/utils.cpp",
@@ -96,11 +111,16 @@ setup(
           "bob/io/video/main.cpp",
           ],
         packages = packages,
-        include_dirs = include_dirs,
+        bob_packages = ['bob.core', 'bob.io.base'],
+        libraries = ['bob_io_video'],
         version = version,
         define_macros = define_macros,
         ),
       ],
+
+    cmdclass = {
+      'build_ext': build_ext
+    },
 
     entry_points={
       'console_scripts': [

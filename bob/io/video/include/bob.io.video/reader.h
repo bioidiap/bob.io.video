@@ -15,7 +15,7 @@
 #include <blitz/array.h>
 #include <stdint.h>
 
-#include <bob/core/array.h>
+#include <bob.io.base/array.h>
 #include "utils.h"
 
 namespace bob { namespace io { namespace video {
@@ -123,13 +123,13 @@ namespace bob { namespace io { namespace video {
       /**
        * Returns the typing information for this video
        */
-      inline const bob::core::array::typeinfo& video_type() const
+      inline const bob::io::base::array::typeinfo& video_type() const
       { return m_typeinfo_video; }
 
       /**
        * Returns the typing information for this video
        */
-      inline const bob::core::array::typeinfo& frame_type() const
+      inline const bob::io::base::array::typeinfo& frame_type() const
       { return m_typeinfo_frame; }
 
       /**
@@ -163,7 +163,7 @@ namespace bob { namespace io { namespace video {
        * of this method matches the number of frames indicated by
        * numberOfFrames().
        */
-      size_t load(bob::core::array::interface& b,
+      size_t load(bob::io::base::array::interface& b,
           bool throw_on_error=false, void (*check)(void)=0) const;
 
     private: //methods
@@ -260,7 +260,7 @@ namespace bob { namespace io { namespace video {
            * verify the return value of this method matches the number of
            * frames indicated by numberOfFrames().
            */
-          bool read (bob::core::array::interface& b, bool throw_on_error=false);
+          bool read (bob::io::base::array::interface& b, bool throw_on_error=false);
 
           /**
            * Reads the currently pointed frame and advances one position.
@@ -365,8 +365,8 @@ namespace bob { namespace io { namespace video {
       std::string m_codecname; ///< the name of the ffmpeg codec to be used
       std::string m_codecname_long; ///< long version of m_codecname
       std::string m_formatted_info; ///< printable information about the video
-      bob::core::array::typeinfo m_typeinfo_video; ///< read whole video type
-      bob::core::array::typeinfo m_typeinfo_frame; ///< read single frame type
+      bob::io::base::array::typeinfo m_typeinfo_video; ///< read whole video type
+      bob::io::base::array::typeinfo m_typeinfo_frame; ///< read single frame type
   };
 
 }}}

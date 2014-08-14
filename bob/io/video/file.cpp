@@ -14,14 +14,15 @@
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
 
-#include <bob/core/blitz_array.h>
+#include <bob.io.base/blitz_array.h>
 
-#include <bob/io/CodecRegistry.h>
-#include "cpp/reader.h"
-#include "cpp/writer.h"
-#include "cpp/utils.h"
+#include <bob.io.base/CodecRegistry.h>
+#include <bob.io.base/File.h>
+#include <bob.io.video/reader.h>
+#include <bob.io.video/writer.h>
+#include <bob.io.video/utils.h>
 
-class VideoFile: public bob::io::File {
+class VideoFile: public bob::io::base::File {
 
   public: //api
 
@@ -36,7 +37,7 @@ class VideoFile: public bob::io::File {
         else if (mode == 'a' && boost::filesystem::exists(path)) {
           // to be able to append must load all data and save in video::Writer
           m_reader = boost::make_shared<bob::io::video::Reader>(m_filename);
-          bob::core::array::blitz_array data(m_reader->video_type());
+          bob::io::base::array::blitz_array data(m_reader->video_type());
           m_reader->load(data);
           size_t height = m_reader->height();
           size_t width = m_reader->width();
@@ -58,11 +59,11 @@ class VideoFile: public bob::io::File {
       return m_filename.c_str();
     }
 
-    virtual const bob::core::array::typeinfo& type_all() const {
+    virtual const bob::io::base::array::typeinfo& type_all() const {
       return (m_reader)? m_reader->video_type() : m_writer->video_type();
     }
 
-    virtual const bob::core::array::typeinfo& type() const {
+    virtual const bob::io::base::array::typeinfo& type() const {
       return (m_reader)? m_reader->video_type() : m_writer->video_type();
     }
 
@@ -74,11 +75,11 @@ class VideoFile: public bob::io::File {
       return s_codecname.c_str();
     }
 
-    virtual void read_all(bob::core::array::interface& buffer) {
+    virtual void read_all(bob::io::base::array::interface& buffer) {
       read(buffer, 0); ///we only have 1 video in a video file anyways
     }
 
-    virtual void read(bob::core::array::interface& buffer, size_t index) {
+    virtual void read(bob::io::base::array::interface& buffer, size_t index) {
 
       if (index != 0)
         throw std::runtime_error("can only read all frames at once in video codecs");
@@ -92,9 +93,9 @@ class VideoFile: public bob::io::File {
       m_reader->load(buffer);
     }
 
-    virtual size_t append (const bob::core::array::interface& buffer) {
+    virtual size_t append (const bob::io::base::array::interface& buffer) {
 
-      const bob::core::array::typeinfo& type = buffer.type();
+      const bob::io::base::array::typeinfo& type = buffer.type();
 
       if (type.nd != 3 and type.nd != 4)
         throw std::runtime_error("input buffer for videos must have 3 or 4 dimensions");
@@ -112,7 +113,7 @@ class VideoFile: public bob::io::File {
       return 1;
     }
 
-    virtual void write (const bob::core::array::interface& buffer) {
+    virtual void write (const bob::io::base::array::interface& buffer) {
 
       append(buffer);
 
@@ -156,6 +157,6 @@ std::string VideoFile::s_codecname = "bob.video";
  *
  * @note: This method can be static.
  */
-boost::shared_ptr<bob::io::File> make_file (const char* path, char mode) {
+boost::shared_ptr<bob::io::base::File> make_file (const char* path, char mode) {
   return boost::make_shared<VideoFile>(path, mode);
 }

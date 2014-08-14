@@ -2,7 +2,7 @@
  * @author Andre Anjos <andre.anjos@idiap.ch>
  * @date Tue  5 Nov 22:09:07 2013
  *
- * @brief A pythonic version of bob::core::array::interface, with minimal
+ * @brief A pythonic version of bob::io::base::array::interface, with minimal
  * functionality.
  */
 
@@ -11,7 +11,7 @@
 
 #include <Python.h>
 
-#include <bob/core/array.h>
+#include <bob.io.base/array.h>
 
 extern "C" {
 #include <bob.blitz/capi.h>
@@ -21,14 +21,14 @@ extern "C" {
 /**
  * Wraps a PyArrayObject such that we can access it from bob::io
  */
-class bobskin: public bob::core::array::interface {
+class bobskin: public bob::io::base::array::interface {
 
   public: //api
 
     /**
      * @brief Builds a new skin from a numpy array object
      */
-    bobskin(PyArrayObject* array, bob::core::array::ElementType eltype);
+    bobskin(PyArrayObject* array, bob::io::base::array::ElementType eltype);
 
     /**
      * @brief By default, the interface is never freed. You must override
@@ -50,12 +50,12 @@ class bobskin: public bob::core::array::interface {
      * @brief Re-allocates this interface taking into consideration new
      * requirements. The internal memory should be considered uninitialized.
      */
-    virtual void set (const bob::core::array::typeinfo& req);
+    virtual void set (const bob::io::base::array::typeinfo& req);
 
     /**
      * @brief Type information for this interface.
      */
-    virtual const bob::core::array::typeinfo& type() const { return m_type; }
+    virtual const bob::io::base::array::typeinfo& type() const { return m_type; }
 
     /**
      * @brief Borrows a reference from the underlying memory. This means
@@ -75,7 +75,7 @@ class bobskin: public bob::core::array::interface {
 
   private: //representation
 
-    bob::core::array::typeinfo m_type; ///< type information
+    bob::io::base::array::typeinfo m_type; ///< type information
     void* m_ptr; ///< pointer to the data
 
 };

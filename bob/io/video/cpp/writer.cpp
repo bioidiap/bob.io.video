@@ -9,7 +9,7 @@
  * Copyright (C) Idiap Research Institute, Martigny, Switzerland
  */
 
-#include "writer.h"
+#include <bob.io.video/writer.h>
 
 #include <boost/format.hpp>
 #include <boost/preprocessor.hpp>
@@ -82,7 +82,7 @@ namespace bob { namespace io { namespace video {
       open_output_file(m_filename, m_format_context);
 
       //sets up the io layer typeinfo
-      m_typeinfo_video.dtype = m_typeinfo_frame.dtype = bob::core::array::t_uint8;
+      m_typeinfo_video.dtype = m_typeinfo_frame.dtype = bob::io::base::array::t_uint8;
       m_typeinfo_video.nd = 4;
       m_typeinfo_frame.nd = 4;
       m_typeinfo_video.shape[0] = 0;
@@ -196,16 +196,16 @@ namespace bob { namespace io { namespace video {
     m_typeinfo_video.shape[0] += 1;
   }
 
-  void Writer::append(const bob::core::array::interface& data) {
+  void Writer::append(const bob::io::base::array::interface& data) {
     if (!m_opened) {
       boost::format m("video writer for file `%s' is closed and cannot be written to");
       m % m_filename;
       throw std::runtime_error(m.str());
     }
 
-    const bob::core::array::typeinfo& type = data.type();
+    const bob::io::base::array::typeinfo& type = data.type();
 
-    if ( type.dtype != bob::core::array::t_uint8 ) {
+    if ( type.dtype != bob::io::base::array::t_uint8 ) {
       boost::format m("input data type = `%s' does not conform to the specified input specifications (3D array = `%s' or 4D array = `%s'), while writing data to file `%s'");
       m % type.str() % m_typeinfo_frame.str() % m_typeinfo_video.str()
         % m_filename;

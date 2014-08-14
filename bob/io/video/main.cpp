@@ -2,7 +2,7 @@
  * @author Andre Anjos <andre.anjos@idiap.ch>
  * @date Wed 16 Oct 17:40:24 2013
  *
- * @brief Pythonic bindings to C++ constructs on bob.core
+ * @brief Pythonic bindings to C++ constructs on bob.io.video
  */
 
 #ifdef NO_IMPORT_ARRAY
@@ -14,7 +14,7 @@
 #include <bob.io.base/api.h>
 
 #include "file.h"
-#include "cpp/utils.h"
+#include <bob.io.video/utils.h>
 
 extern "C" {
 

@@ -17,7 +17,7 @@
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/version.hpp>
 #include <boost/format.hpp>
-#include <bob/config.h>
+#include <bob.core/config.h>
 
 extern "C" {
 
@@ -121,10 +121,10 @@ static PyObject* ffmpeg_version() {
 }
 
 /**
- * Bob version, API version and platform
+ * bob.core c/c++ api version
  */
-static PyObject* bob_version() {
-  return Py_BuildValue("sis", BOB_VERSION, BOB_API_VERSION, BOB_PLATFORM);
+static PyObject* bob_core_version() {
+  return Py_BuildValue("{ss}", "api", BOOST_PP_STRINGIZE(BOB_CORE_API_VERSION));
 }
 
 /**
@@ -196,7 +196,7 @@ static PyObject* build_version_dictionary() {
   if (!retval) return 0;
   auto retval_ = make_safe(retval);
 
-  if (!dict_steal(retval, "Bob", bob_version())) return 0;
+  if (!dict_steal(retval, "Bob", bob_core_version())) return 0;
   if (!dict_steal(retval, "FFmpeg", ffmpeg_version())) return 0;
   if (!dict_steal(retval, "Boost", boost_version())) return 0;
   if (!dict_steal(retval, "Compiler", compiler_version())) return 0;

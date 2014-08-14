@@ -14,7 +14,7 @@
 #include <bob.io.base/api.h>
 #include <stdexcept>
 
-#include "cpp/writer.h"
+#include <bob.io.video/writer.h>
 
 #define VIDEOWRITER_NAME "writer"
 PyDoc_STRVAR(s_videowriter_str, BOB_EXT_MODULE_PREFIX "." VIDEOWRITER_NAME);

@@ -11,7 +11,7 @@
 #define BOB_IO_VIDEO_FILE_H
 
 #include <boost/shared_ptr.hpp>
-#include <bob/io/File.h>
+#include <bob.io.base/File.h>
 
 /**
  * This defines the factory method F that can create codecs of this type.
@@ -33,6 +33,6 @@
  *
  * @note: This method can be static.
  */
-boost::shared_ptr<bob::io::File> make_file (const char* path, char mode);
+boost::shared_ptr<bob::io::base::File> make_file (const char* path, char mode);
 
 #endif /* BOB_IO_VIDEO_FILE_H */

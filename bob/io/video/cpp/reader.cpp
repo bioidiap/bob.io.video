@@ -9,15 +9,14 @@
  * Copyright (C) Idiap Research Institute, Martigny, Switzerland
  */
 
-#include "reader.h"
+#include <bob.io.video/reader.h>
 
 #include <stdexcept>
 #include <boost/format.hpp>
 #include <boost/preprocessor.hpp>
 #include <limits>
 
-#include <bob/core/check.h>
-#include <bob/core/blitz_array.h>
+#include <bob.io.base/blitz_array.h>
 
 #ifndef AV_PIX_FMT_RGB24
 #define AV_PIX_FMT_RGB24 PIX_FMT_RGB24
@@ -115,7 +114,7 @@ namespace bob { namespace io { namespace video {
     /**
      * This will make sure we can interface with the io subsystem
      */
-    m_typeinfo_video.dtype = m_typeinfo_frame.dtype = bob::core::array::t_uint8;
+    m_typeinfo_video.dtype = m_typeinfo_frame.dtype = bob::io::base::array::t_uint8;
     m_typeinfo_video.nd = 4;
     m_typeinfo_frame.nd = 3;
     m_typeinfo_video.shape[0] = m_nframes;
@@ -132,11 +131,11 @@ namespace bob { namespace io { namespace video {
 
   size_t Reader::load(blitz::Array<uint8_t,4>& data,
       bool throw_on_error, void (*check)(void)) const {
-    bob::core::array::blitz_array tmp(data);
+    bob::io::base::array::blitz_array tmp(data);
     return load(tmp, throw_on_error, check);
   }
 
-  size_t Reader::load(bob::core::array::interface& b,
+  size_t Reader::load(bob::io::base::array::interface& b,
       bool throw_on_error, void (*check)(void)) const {
 
     //checks if the output array shape conforms to the video specifications,
@@ -153,7 +152,7 @@ namespace bob { namespace io { namespace video {
 
     for (const_iterator it=begin(); it!=end();) {
       if (check) check(); ///< runs user check function before we start our work
-      bob::core::array::blitz_array ref(static_cast<void*>(ptr), m_typeinfo_frame);
+      bob::io::base::array::blitz_array ref(static_cast<void*>(ptr), m_typeinfo_frame);
       if (it.read(ref, throw_on_error)) {
         ptr += frame_size;
         ++frames_read;
@@ -244,11 +243,11 @@ namespace bob { namespace io { namespace video {
 
   bool Reader::const_iterator::read(blitz::Array<uint8_t,3>& data,
       bool throw_on_error) {
-    bob::core::array::blitz_array tmp(data);
+    bob::io::base::array::blitz_array tmp(data);
     return read(tmp, throw_on_error);
   }
 
-  bool Reader::const_iterator::read(bob::core::array::interface& data,
+  bool Reader::const_iterator::read(bob::io::base::array::interface& data,
       bool throw_on_error) {
 
     if (!m_parent) {
@@ -269,7 +268,7 @@ namespace bob { namespace io { namespace video {
       return false;
     }
 
-    const bob::core::array::typeinfo& info = data.type();
+    const bob::io::base::array::typeinfo& info = data.type();
 
     //checks if the output array shape conforms to the video specifications,
     //otherwise, throw
