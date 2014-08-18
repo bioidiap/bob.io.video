@@ -3,8 +3,10 @@
 # Andre Anjos <andre.anjos@idiap.ch>
 # Mon 16 Apr 08:18:08 2012 CEST
 
+bob_packages = ['bob.core', 'bob.io.base']
+
 from setuptools import setup, find_packages, dist
-dist.Distribution(dict(setup_requires=['bob.blitz', 'bob.core', 'bob.io.base']))
+dist.Distribution(dict(setup_requires=['bob.blitz'] + bob_packages))
 from bob.blitz.extension import Extension, Library, build_ext
 from bob.extension import pkgconfig
 
@@ -65,37 +67,37 @@ setup(
     install_requires=[
       'setuptools',
       'bob.blitz',
+      'bob.core',
       'bob.io.base',
     ] + pil_or_pillow,
 
     namespace_packages=[
       "bob",
       "bob.io",
-      ],
+    ],
 
     ext_modules = [
       Extension("bob.io.video.version",
         [
           "bob/io/video/version.cpp",
-          ],
+        ],
         packages = packages,
         boost_modules = ['system'],
-        bob_packages = ['bob.core', 'bob.io.base'],
+        bob_packages = bob_packages,
         version = version,
         define_macros = define_macros,
-        ),
+      ),
 
-      Library("bob_io_video",
+      Library("bob.io.video.bob_io_video",
         [
           "bob/io/video/cpp/utils.cpp",
           "bob/io/video/cpp/reader.cpp",
           "bob/io/video/cpp/writer.cpp",
         ],
-        package_directory = package_dir,
-        target_directory = target_dir,
         define_macros = define_macros,
+        boost_modules = ['system'],
         version = version,
-        bob_packages = ['bob.core', 'bob.io.base'],
+        bob_packages = bob_packages,
         packages = packages,
       ),
 
@@ -109,14 +111,14 @@ setup(
           "bob/io/video/writer.cpp",
           "bob/io/video/file.cpp",
           "bob/io/video/main.cpp",
-          ],
+        ],
         packages = packages,
-        bob_packages = ['bob.core', 'bob.io.base'],
-        libraries = ['bob_io_video'],
+        boost_modules = ['system'],
+        bob_packages = bob_packages,
         version = version,
         define_macros = define_macros,
-        ),
-      ],
+      ),
+    ],
 
     cmdclass = {
       'build_ext': build_ext
@@ -125,8 +127,8 @@ setup(
     entry_points={
       'console_scripts': [
         'bob_video_test.py = bob.io.video.script.video_test:main',
-        ],
-      },
+      ],
+    },
 
     classifiers = [
       'Development Status :: 3 - Alpha',
@@ -137,6 +139,6 @@ setup(
       'Programming Language :: Python :: 3',
       'Topic :: Software Development :: Libraries :: Python Modules',
       'Environment :: Plugins',
-      ],
+    ],
 
-    )
+  )
