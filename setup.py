@@ -8,7 +8,7 @@ bob_packages = ['bob.core', 'bob.io.base']
 from setuptools import setup, find_packages, dist
 dist.Distribution(dict(setup_requires=['bob.blitz'] + bob_packages))
 from bob.blitz.extension import Extension, Library, build_ext
-from bob.extension import pkgconfig
+from bob.extension import pkgconfig, find_library
 
 import os
 package_dir = os.path.dirname(os.path.realpath(__file__))
@@ -38,11 +38,14 @@ define_macros = [('__STDC_CONSTANT_MACROS', None)]
 # Checks if we have avformat_alloc_output_context2 defined in libavformat
 libavformat_pkg = pkgconfig('libavformat >= 52.31.0')
 import ctypes
-import ctypes.util
-lib = ctypes.util.find_library(libavformat_pkg.libraries()[0])
-if lib is not None:
+lib = find_library(
+    name=libavformat_pkg.libraries()[0],
+    version=libavformat_pkg.version,
+    prefixes=libavformat_pkg.library_directories()
+    )
+if lib:
   try:
-    dll = ctypes.CDLL(lib)
+    dll = ctypes.CDLL(lib[0])
     if hasattr(dll, 'avformat_alloc_output_context2'):
       define_macros.append(('HAVE_AVFORMAT_ALLOC_OUTPUT_CONTEXT2', None))
   except OSError:
