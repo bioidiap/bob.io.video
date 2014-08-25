@@ -197,7 +197,6 @@ static PyObject* build_version_dictionary() {
   if (!retval) return 0;
   auto retval_ = make_safe(retval);
 
-  if (!dict_steal(retval, "Bob", bob_core_version())) return 0;
   if (!dict_steal(retval, "FFmpeg", ffmpeg_version())) return 0;
   if (!dict_steal(retval, "Boost", boost_version())) return 0;
   if (!dict_steal(retval, "Compiler", compiler_version())) return 0;
@@ -205,7 +204,7 @@ static PyObject* build_version_dictionary() {
   if (!dict_steal(retval, "NumPy", numpy_version())) return 0;
   if (!dict_set(retval, "Blitz++", BZ_VERSION)) return 0;
   if (!dict_steal(retval, "bob.blitz", bob_blitz_version())) return 0;
-  if (!dict_steal(retval, "bob.core", bob_blitz_version())) return 0;
+  if (!dict_steal(retval, "bob.core", bob_core_version())) return 0;
   if (!dict_steal(retval, "bob.io.base", bob_io_base_version())) return 0;
 
   Py_INCREF(retval);
