@@ -2,6 +2,7 @@
 *.swp
 *.pyc
 *.so
+*.so.*
 bin
 eggs
 parts
@@ -17,3 +18,4 @@ build
 *.egg
 src/
 opsnr.stt
+CMakeLists.txt
