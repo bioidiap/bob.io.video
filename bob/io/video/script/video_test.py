@@ -24,7 +24,7 @@ import numpy
 
 # from bob
 from bob.io.base import save as save_to_file
-from bob.io.base import create_directories_save
+from bob.io.base import create_directories_safe
 
 # internal
 from .. import utils, test_utils
@@ -440,7 +440,7 @@ def main(user_input=None):
           size = '%dx%dx%d@%gHz' % (args.length, args.height, args.width,
               args.framerate)
           outdir = os.path.join(args.output, test, codec, size, format)
-          create_directories_save(outdir)
+          create_directories_safe(outdir)
 
           try:
             result = detail(f, (args.length, args.height, args.width),
