@@ -73,9 +73,6 @@ setup(
     setup_requires = build_requires + pil_or_pillow,
     install_requires = build_requires + pil_or_pillow,
 
-    install_requires=[
-    ] + pil_or_pillow,
-
     namespace_packages=[
       "bob",
       "bob.io",
