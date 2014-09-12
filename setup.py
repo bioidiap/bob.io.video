@@ -6,9 +6,12 @@
 bob_packages = ['bob.core', 'bob.io.base']
 
 from setuptools import setup, find_packages, dist
-dist.Distribution(dict(setup_requires=['bob.blitz'] + bob_packages))
+dist.Distribution(dict(setup_requires=['bob.extension', 'bob.blitz'] + bob_packages))
 from bob.blitz.extension import Extension, Library, build_ext
 from bob.extension import pkgconfig, find_library
+
+from bob.extension.utils import load_requirements
+build_requires = load_requirements()
 
 import os
 package_dir = os.path.dirname(os.path.realpath(__file__))
@@ -67,11 +70,10 @@ setup(
     include_package_data=True,
     zip_safe=False,
 
+    setup_requires = build_requires + pil_or_pillow,
+    install_requires = build_requires + pil_or_pillow,
+
     install_requires=[
-      'setuptools',
-      'bob.blitz',
-      'bob.core',
-      'bob.io.base',
     ] + pil_or_pillow,
 
     namespace_packages=[
