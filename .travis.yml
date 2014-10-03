@@ -3,20 +3,20 @@ matrix:
   include:
   - python: 2.6
     env:
-    - MAX_CONCURRENCY=4
+    - MAX_CONCURRENCY=1
   - python: 2.7
     env:
     - secure: TquyIDtjrxz3d9SkrNTP59OuG1/JIEozqUI/tQLHS/3SyYe5ZLjCBhzr0Ay0UmqLQpcoCTp+RSfNzIfHxCqwGqu9+GndXiuHZQAG9FB1gyjBovsHyUki1PAbNSBl/glenNShIFtgpOxKUaYqQ0JjDBdxywOjoqKVJgV27Vk0K0Y=
     - secure: IVEbgKYaWUwNapbnioa3rrkLbNLe8pZqJIo9YWmO4EHI58qHyVahb1K9KSM0aNIN2gMZY2i5h00w64w9VxFsTJEwse/Cup3UBMVSufT5r+zVpRwXlEmc62BiRgD4PRXkDN74PsZvPYFs0GGFtpZWsg8oqxwZXBBYygHYxcmKN5A=
-    - MAX_CONCURRENCY=4
+    - MAX_CONCURRENCY=1
   - python: 3.2
     env:
     - NUMPYSPEC===1.7.1
-    - MAX_CONCURRENCY=4
+    - MAX_CONCURRENCY=1
   - python: 3.3
     env:
     - NUMPYSPEC===1.8.0
-    - MAX_CONCURRENCY=4
+    - MAX_CONCURRENCY=1
 before_install:
 - sudo add-apt-repository -y ppa:biometrics/bob
 - sudo apt-get update -qq
