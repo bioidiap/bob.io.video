@@ -1,4 +1,5 @@
 language: python
+env: MAX_CONCURRENCY=4
 matrix:
   include:
   - python: 2.6
