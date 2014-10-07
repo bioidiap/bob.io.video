@@ -27,15 +27,6 @@ packages = [
 
 version = '2.0.0a0'
 
-# Check if python-imaging means pil or pillow
-pil_or_pillow = []
-try:
-  import pkg_resources
-  pkg_resources.require('PIL')
-  pil_or_pillow.append('pil')
-except pkg_resources.DistributionNotFound as e:
-  pil_or_pillow.append('pillow')
-
 define_macros = [('__STDC_CONSTANT_MACROS', None)]
 
 # Checks if we have avformat_alloc_output_context2 defined in libavformat
@@ -70,8 +61,8 @@ setup(
     include_package_data=True,
     zip_safe=False,
 
-    setup_requires = build_requires + pil_or_pillow,
-    install_requires = build_requires + pil_or_pillow,
+    setup_requires = build_requires,
+    install_requires = build_requires,
 
     namespace_packages=[
       "bob",
