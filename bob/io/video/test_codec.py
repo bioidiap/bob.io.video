@@ -25,22 +25,22 @@ def check_format_codec(function, shape, framerate, format, codec, maxdist):
     reloaded = encoded.load()
 
     # test number of frames is correct
-    assert len(orig) == len(encoded), "original length %d != %d encoded" % (len(orig), len(encoded))
-    assert len(orig) == len(reloaded), "original length %d != %d reloaded" % (len(orig), len(reloaded))
+    assert len(orig) == len(encoded), "original length %d != %d encoded for format `%s' and codec `%s'" % (len(orig), len(encoded), format, codec)
+    assert len(orig) == len(reloaded), "original length %d != %d reloaded for format `%s' and codec `%s'" % (len(orig), len(reloaded), format, codec)
 
     # test distortion patterns (quick sequential check)
     dist = []
     for k, of in enumerate(orig):
       dist.append(abs(of.astype('float64')-reloaded[k].astype('float64')).mean())
-    assert max(dist) <= maxdist, "max(distortion) %g > %g allowed" % (max(dist), maxdist)
+    assert max(dist) <= maxdist, "max(distortion) %g > %g allowed for format `%s' and codec `%s'" % (max(dist), maxdist, format, codec)
 
     # assert we can randomly access any frame (choose 3 at random)
     for k in numpy.random.randint(length, size=(3,)):
       rdist = abs(orig[k].astype('float64')-encoded[k].astype('float64')).mean()
-      assert rdist <= maxdist, "distortion(frame[%d]) %g > %g allowed" % (k, rdist, maxdist)
+      assert rdist <= maxdist, "distortion(frame[%d]) %g > %g allowed for format `%s' and codec `%s'" % (k, rdist, maxdist, format, codec)
 
     # make sure that the encoded frame rate is not off by a big amount
-    assert abs(framerate - encoded.frame_rate) <= (1.0/length), "reloaded framerate %g differs from original %g by more than %g" % (encoded.frame_rate, framerate, 1.0/length)
+    assert abs(framerate - encoded.frame_rate) <= (1.0/length), "reloaded framerate %g differs from original %g by more than %g for format `%s' and codec `%s'" % (encoded.frame_rate, framerate, 1.0/length, format, codec)
 
   finally:
 
@@ -84,8 +84,8 @@ def test_format_codecs():
       # low quality encoders - avoid using - available for compatibility
       wmv2       = dict(frameskip=3.0,  color=10., noise=50.),
       wmv1       = dict(frameskip=2.5,  color=10., noise=50.),
-      msmpeg4    = dict(frameskip=5.,   color=10., noise=50.),
-      msmpeg4v2  = dict(frameskip=5.,   color=10., noise=50.),
+      msmpeg4    = dict(frameskip=6.,   color=10., noise=50.),
+      msmpeg4v2  = dict(frameskip=6.,   color=10., noise=50.),
       )
 
   # some exceptions
@@ -117,7 +117,7 @@ def check_user_video(format, codec, maxdist):
     orig_vreader = reader(INPUT_VIDEO)
     orig = orig_vreader[:MAXLENTH]
     (olength, _, oheight, owidth) = orig.shape
-    assert len(orig) == MAXLENTH, "original length %d != %d MAXLENTH" % (len(orig), MAXLENTH)
+    assert len(orig) == MAXLENTH, "original length %d != %d MAXLENTH for format `%s' and codec `%s'" % (len(orig), MAXLENTH, format, codec)
 
     # encode the input video using the format and codec provided by the user
     outv = writer(fname, oheight, owidth, orig_vreader.frame_rate,
@@ -130,17 +130,17 @@ def check_user_video(format, codec, maxdist):
     reloaded = encoded.load()
 
     # test number of frames is correct
-    assert len(orig) == len(encoded), "original length %d != %d encoded" % (len(orig), len(encoded))
-    assert len(orig) == len(reloaded), "original length %d != %d reloaded" % (len(orig), len(reloaded))
+    assert len(orig) == len(encoded), "original length %d != %d encoded for format `%s' and codec `%s'" % (len(orig), len(encoded), format, codec)
+    assert len(orig) == len(reloaded), "original length %d != %d reloaded for format `%s' and codec `%s'" % (len(orig), len(reloaded), format, codec)
 
     # test distortion patterns (quick sequential check)
     dist = []
     for k, of in enumerate(orig):
       dist.append(abs(of.astype('float64')-reloaded[k].astype('float64')).mean())
-    assert max(dist) <= maxdist, "max(distortion) %g > %g allowed" % (max(dist), maxdist)
+    assert max(dist) <= maxdist, "max(distortion) %g > %g allowed for format `%s' and codec `%s'" % (max(dist), maxdist, format, codec)
 
     # make sure that the encoded frame rate is not off by a big amount
-    assert abs(orig_vreader.frame_rate - encoded.frame_rate) <= (1.0/MAXLENTH), "original video framerate %g differs from encoded %g by more than %g" % (encoded.frame_rate, framerate, 1.0/MAXLENTH)
+    assert abs(orig_vreader.frame_rate - encoded.frame_rate) <= (1.0/MAXLENTH), "original video framerate %g differs from encoded %g by more than %g for format `%s' and codec `%s'" % (encoded.frame_rate, framerate, 1.0/MAXLENTH, format, codec)
 
   finally:
 
