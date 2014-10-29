@@ -143,10 +143,10 @@ example:
   .. doctest::
      :options: +NORMALIZE_WHITESPACE, +ELLIPSIS
 
-    >>> import bob.io.video
-    >>> codecs = bob.io.video.supported_videowriter_formats()['mp4']['supported_codecs'].keys()
-    >>> print(codecs) # doctest: +SKIP
-    ['h264', 'libx264', 'mjpeg', 'mpeg1video']
+     >>> import bob.io.video
+     >>> codecs = bob.io.video.supported_videowriter_formats()['mp4']['supported_codecs'].keys()
+     >>> print(codecs) # doctest: +SKIP
+     ['h264', 'libx264', 'mjpeg', 'mpeg1video']
 
   You can see from the output command that only 4 codecs are supported by the
   file format ``mp4``.
