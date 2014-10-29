@@ -2,7 +2,7 @@
 *.swp
 *.pyc
 *.so
-*.so.*
+*.dylib
 bin
 eggs
 parts
@@ -17,5 +17,3 @@ dist
 build
 *.egg
 src/
-opsnr.stt
-CMakeLists.txt

@@ -18,8 +18,7 @@
  User Guide
 ============
 
-This package provides support for dealing with videos in an equivalent way to
-dealing with other data files in |project|:
+This package provides support for dealing with videos in an equivalent way to dealing with other data files in |project|, i.e., by using :py:func:`bob.io.base.load` and :py:func:`bob.io.base.save`.
 
 .. doctest::
 
@@ -28,11 +27,11 @@ dealing with other data files in |project|:
   >>> my_video_copy = bob.io.base.load('testvideo.avi')
 
 Video reading and writing is performed using an `FFmpeg`_ (or `libav`_ if
-`FFmpeg`_ is not available) bridge. |project|'s :py:meth:`bob.io.base.save`
+`FFmpeg`_ is not available) bridge. |project|'s :py:func:`bob.io.base.save`
 method will allow you to choose the output format with the same extension
 mechanism as mentioned earlier. `FFmpeg`_ will then choose a default codec for
 the format and perform encoding. The output file can be as easily loaded using
-:py:meth:`bob.io.base.load`.
+:py:func:`bob.io.base.load`.
 
 For finer control over the loading, saving, format and codecs used for a
 specific encoding or decoding operation, you must directly use either

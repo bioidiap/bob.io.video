@@ -40,13 +40,13 @@ Codec and Format Availability
 -----------------------------
 
 To get a list of all FFmpeg_ (or libav_) supported formats for a given build of
-|project|, use the ``bob_video_test.py`` application:
+|project|, use the ``bob_video_test.py`` application provided by this module:
 
 .. code-block:: sh
 
-  $ bob_video_test.py --list-all-codecs # lists all codecs available
+  $ ./bin/bob_video_test.py --list-all-codecs # lists all codecs available
 
-  $ bob_video_test.py --list-all-formats # lists all formats available
+  $ ./bin/bob_video_test.py --list-all-formats # lists all formats available
 
 These listings represent all that is compiled with your current installation of
 FFmpeg_ or libav_. To list supported formats and codecs by |project| use
@@ -54,16 +54,16 @@ another set of command-line options:
 
 .. code-block:: sh
 
-  $ bob_video_test.py --list-codecs # lists all codecs currently supported
+  $ ./bin/bob_video_test.py --list-codecs # lists all codecs currently supported
 
-  $ bob_video_test.py --list-formats # lists all formats currently supported
+  $ ./bin/bob_video_test.py --list-formats # lists all formats currently supported
 
 The program ``bob_video_test.py`` can be used to run a sequence of tests using
 all combinations of *supported* formats and tests:
 
 .. code-block:: sh
 
-  $ bob_video_test.py # runs all tests
+  $ ./bin/bob_video_test.py # runs all tests
 
 This will run through all combinations of supported codecs and formats and will
 report average distortion figures for each of 4 different tests, which exercise
@@ -120,7 +120,7 @@ change this behavior with the option ``--user-frames``. Here is an example:
 
 .. code-block:: sh
 
-  $ bob_video_test.py --user-video=test_sample.avi
+  $ ./bin/bob_video_test.py --user-video=test_sample.avi
 
 All tests are executed by default, on all combination of formats and codecs.
 That can be long. You can limit the test execution by properly choosing the
@@ -131,7 +131,7 @@ example:
 
   # execute only the user video test with a user provided video and
   # using the H.264 built-in codec and a MOV output file format.
-  $ bob_video_test.py --format mov --codec h264 --user-video=test_sample.avi -- user
+  $ ./bin/bob_video_test.py --format mov --codec h264 --user-video=test_sample.avi -- user
 
 .. note::
 
@@ -140,10 +140,12 @@ example:
   |project|. To know which formats support each codec, you can execute the
   following python code:
 
-  .. code-block:: python
+  .. doctest::
+     :options: +NORMALIZE_WHITESPACE, +ELLIPSIS
 
-    import bob.io
-    bob.io.supported_videowriter_formats()['mp4']['supported_codecs'].keys()
+    >>> import bob.io.video
+    >>> codecs = bob.io.video.supported_videowriter_formats()['mp4']['supported_codecs'].keys()
+    >>> print(codecs) # doctest: +SKIP
     ['h264', 'libx264', 'mjpeg', 'mpeg1video']
 
   You can see from the output command that only 4 codecs are supported by the
@@ -185,7 +187,7 @@ executed:
 
 .. code-block:: sh
 
-  $ bob_video_test.py
+  $ ./bin/bob_video_test.py
 
 Idiap Linux (Xubuntu), version 12.10 + libav 0.8.3
 ==================================================
