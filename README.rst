@@ -23,7 +23,7 @@
 
 This package contains support for Video I/O in Bob.
 Video reading and writing is implemented using either FFmpeg or LibAV, whichever is installed.
-By importing this package, you activate a transparent plugin that makes possible reading and writing video files using :py:mod:`bob.io.base` functionalities.
+By importing this package, you activate a transparent plugin that makes possible reading and writing video files using ``bob.io.base`` functionalities.
 
 Installation
 ------------
