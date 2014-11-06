@@ -13,6 +13,9 @@ from bob.extension import pkgconfig, find_library
 from bob.extension.utils import load_requirements
 build_requires = load_requirements()
 
+# Define package version
+version = open("version.txt").read().rstrip()
+
 import os
 package_dir = os.path.dirname(os.path.realpath(__file__))
 target_dir = os.path.join(package_dir, 'bob', 'io', 'video')
@@ -24,8 +27,6 @@ packages = [
   'libavutil >= 49.15.0',
   'libswscale >= 0.7.1'
   ]
-
-version = '2.0.0a0'
 
 define_macros = [('__STDC_CONSTANT_MACROS', None)]
 
