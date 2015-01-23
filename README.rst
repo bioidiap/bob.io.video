@@ -6,7 +6,7 @@
    :target: http://pythonhosted.org/bob.io.video/index.html
 .. image:: http://img.shields.io/badge/docs-latest-orange.png
    :target: https://www.idiap.ch/software/bob/docs/latest/bioidiap/bob.io.video/master/index.html
-.. image:: https://travis-ci.org/bioidiap/bob.io.video.svg?branch=v2.0.1
+.. image:: https://travis-ci.org/bioidiap/bob.io.video.svg?branch=master
    :target: https://travis-ci.org/bioidiap/bob.io.video
 .. image:: https://coveralls.io/repos/bioidiap/bob.io.video/badge.png
    :target: https://coveralls.io/r/bioidiap/bob.io.video
