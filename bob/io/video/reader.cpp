@@ -104,7 +104,7 @@ static int PyBobIoVideoReader_Init(PyBobIoVideoReaderObject* self,
 #endif
 
   try {
-    self->v = boost::make_shared<bob::io::video::Reader>(c_filename, check);
+    self->v.reset(new bob::io::video::Reader(c_filename, check));
   }
   catch (std::exception& e) {
     PyErr_SetString(PyExc_RuntimeError, e.what());
@@ -584,8 +584,7 @@ static PyObject* PyBobIoVideoReaderIterator_New(PyTypeObject* type, PyObject*, P
 }
 
 static PyObject* PyBobIoVideoReaderIterator_Iter (PyBobIoVideoReaderIteratorObject* self) {
-  Py_INCREF(self);
-  return reinterpret_cast<PyObject*>(self);
+  return Py_BuildValue("O", self);
 }
 
 static PyObject* PyBobIoVideoReaderIterator_Next (PyBobIoVideoReaderIteratorObject* self) {
@@ -671,7 +670,7 @@ static PyObject* PyBobIoVideoReader_Iter (PyBobIoVideoReaderObject* self) {
   Py_INCREF(self);
   retval->pyreader = self;
   retval->iter.reset(new bob::io::video::Reader::const_iterator(self->v->begin()));
-  return reinterpret_cast<PyObject*>(retval);
+  return Py_BuildValue("N", retval);
 }
 
 PyTypeObject PyBobIoVideoReader_Type = {

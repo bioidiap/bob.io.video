@@ -11,6 +11,7 @@
 
 #include <bob.blitz/capi.h>
 #include <bob.blitz/cleanup.h>
+#include <bob.extension/defines.h>
 #include <bob.io.base/api.h>
 
 #include "file.h"
@@ -41,13 +42,12 @@ static int dict_set(PyObject* d, const char* key, const char* value) {
   return 0; //a problem occurred
 }
 
-static int dict_steal(PyObject* d, const char* key, PyObject* value) {
-  if (!value) return 0;
-  auto value_ = make_safe(value);
+static int dict_set(PyObject* d, const char* key, PyObject* value) {
   int retval = PyDict_SetItemString(d, key, value);
   if (retval == 0) return 1; //all good
   return 0; //a problem occurred
 }
+
 
 /**
  * Creates an str object, from a C or C++ string. Returns a **new
@@ -70,21 +70,16 @@ static PyObject* make_object(double v) {
   return PyFloat_FromDouble(v);
 }
 
-static PyObject* make_object(PyObject* v) {
-  Py_INCREF(v);
-  return v;
-}
 
 /**
  * Sets a dictionary entry using a string as key and another one as value.
  * Returns 1 in case of success, 0 in case of failure.
  */
 template <typename T>
-int dict_set_string(boost::shared_ptr<PyObject> d, const char* key, T value) {
-  PyObject* pyvalue = make_object(value);
+int dict_set_string(PyObject* d, const char* key, T value) {
+  auto pyvalue = make_xsafe(make_object(value));
   if (!pyvalue) return 0;
-  int retval = PyDict_SetItemString(d.get(), key, pyvalue);
-  Py_DECREF(pyvalue);
+  int retval = PyDict_SetItemString(d, key, pyvalue.get());
   if (retval == 0) return 1; //all good
   return 0; //a problem occurred
 }
@@ -95,10 +90,9 @@ int dict_set_string(boost::shared_ptr<PyObject> d, const char* key, T value) {
  */
 template <typename T>
 int list_append(PyObject* l, T value) {
-  PyObject* pyvalue = make_object(value);
+  auto pyvalue = make_xsafe(make_object(value));
   if (!pyvalue) return 0;
-  int retval = PyList_Append(l, pyvalue);
-  Py_DECREF(pyvalue);
+  int retval = PyList_Append(l, pyvalue.get());
   if (retval == 0) return 1; //all good
   return 0; //a problem occurred
 }
@@ -132,8 +126,9 @@ static PyObject* describe_codec(const AVCodec* codec) {
    * are absolutely sure all went good. At this point, we free
    * the PyObject* from the boost encapsulation and return it.
    */
-  boost::shared_ptr<PyObject> retval(PyDict_New(), &pyobject_deleter);
+  PyObject* retval = PyDict_New();
   if (!retval) return 0;
+  auto retval_ = make_safe(retval);
 
   /* Sets basic properties for the codec */
   if (!dict_set_string(retval, "name", codec->name)) return 0;
@@ -145,14 +140,15 @@ static PyObject* describe_codec(const AVCodec* codec) {
    * list with all their names
    */
 
-  boost::shared_ptr<PyObject> pixfmt;
+  PyObject* pixfmt = 0;
   if (codec->pix_fmts) {
-    pixfmt.reset(PyList_New(0), &pyobject_deleter);
+    pixfmt = PyList_New(0);
     if (!pixfmt) return 0;
+    auto pixfmt_ = make_safe(pixfmt);
 
     unsigned int i=0;
     while(codec->pix_fmts[i] != -1) {
-      if (!list_append(pixfmt.get(),
+      if (!list_append(pixfmt,
 #if LIBAVUTIL_VERSION_INT >= 0x320f01 //50.15.1 @ ffmpeg-0.6
             av_get_pix_fmt_name
 #else
@@ -160,28 +156,31 @@ static PyObject* describe_codec(const AVCodec* codec) {
 #endif
             (codec->pix_fmts[i++]))) return 0;
     }
-    pixfmt.reset(PySequence_Tuple(pixfmt.get()), &pyobject_deleter);
+    pixfmt = PySequence_Tuple(pixfmt);
   }
   else {
     Py_INCREF(Py_None);
-    pixfmt.reset(Py_None, &pyobject_deleter);
+    pixfmt = Py_None;
   }
 
-  if (!dict_set_string(retval, "pixfmts", pixfmt.get())) return 0;
+  auto pixfmt_ = make_safe(pixfmt);
+  if (!dict_set(retval, "pixfmts", pixfmt)) return 0;
 
   /* Get specific framerates for the codec, if any */
   const AVRational* rate = codec->supported_framerates;
-  boost::shared_ptr<PyObject> rates(PyList_New(0), &pyobject_deleter);
+  PyObject* rates = PyList_New(0);
   if (!rates) return 0;
+  auto rates_ = make_safe(rates);
 
   while (rate && rate->num && rate->den) {
-    list_append(rates.get(), ((double)rate->num)/((double)rate->den));
+    list_append(rates, ((double)rate->num)/((double)rate->den));
     ++rate;
   }
-  rates.reset(PySequence_Tuple(rates.get()), &pyobject_deleter);
-  if (!rates) return 0;
 
-  if (!dict_set_string(retval, "specific_framerates_hz", rates.get())) return 0;
+  rates = PySequence_Tuple(rates);
+  rates_ = make_safe(rates);
+
+  if (!dict_set(retval, "specific_framerates_hz", rates)) return 0;
 
   /* Other codec capabilities */
 # ifdef CODEC_CAP_LOSSLESS
@@ -200,8 +199,7 @@ static PyObject* describe_codec(const AVCodec* codec) {
   if (!dict_set_string(retval, "decode", (bool)(avcodec_find_decoder(codec->id)))) return 0;
 
   /* If all went OK, detach the returned value from the smart pointer **/
-  Py_INCREF(retval.get());
-  return retval.get();
+  return Py_BuildValue("O", retval);
 
 }
 
@@ -217,12 +215,12 @@ static PyObject* PyBobIoVideo_DescribeEncoder(PyObject*, PyObject *args, PyObjec
   PyObject* key = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &key)) return 0;
 
-  if (!PyNumber_Check(key) && !check_string(key)) {
+  if (!PyBob_NumberCheck(key) && !check_string(key)) {
     PyErr_SetString(PyExc_TypeError, "input `key' must be a number identifier or a string with the codec name");
     return 0;
   }
 
-  if (PyNumber_Check(key)) {
+  if (PyBob_NumberCheck(key)) {
 
     /* If you get to this point, the user passed a number - re-parse */
     int id = 0;
@@ -276,12 +274,12 @@ static PyObject* PyBobIoVideo_DescribeDecoder(PyObject*, PyObject *args, PyObjec
   PyObject* key = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &key)) return 0;
 
-  if (!PyNumber_Check(key) && !check_string(key)) {
+  if (!PyBob_NumberCheck(key) && !check_string(key)) {
     PyErr_SetString(PyExc_TypeError, "input `key' must be a number identifier or a string with the codec name");
     return 0;
   }
 
-  if (PyNumber_Check(key)) {
+  if (PyBob_NumberCheck(key)) {
 
     /* If you get to this point, the user passed a number - re-parse */
     int id = 0;
@@ -404,16 +402,13 @@ static PyObject* get_video_iformats(void (*f)(std::map<std::string, AVInputForma
       if (!list_append(ext_list, ext->c_str())) return 0;
     }
 
-    Py_INCREF(ext_list);
-    if (!dict_steal(property, "extensions", ext_list)) return 0;
+    if (!dict_set(property, "extensions", ext_list)) return 0;
 
-    Py_INCREF(property);
-    if (!dict_steal(retval, k->first.c_str(), property)) return 0;
+    if (!dict_set(retval, k->first.c_str(), property)) return 0;
 
   }
 
-  Py_INCREF(retval);
-  return retval;
+  return Py_BuildValue("O", retval);
 
 }
 
@@ -471,17 +466,15 @@ static PyObject* get_video_oformats(bool supported) {
     // get extensions
     std::vector<std::string> exts;
     bob::io::video::tokenize_csv(k->second->extensions, exts);
-
-    PyObject* ext_list = PyList_New(0);
+    Py_ssize_t size = exts.size();
+    PyObject* ext_list = PyList_New(size);
     if (!ext_list) return 0;
     auto ext_list_ = make_safe(ext_list);
 
-    for (auto ext=exts.begin(); ext!=exts.end(); ++ext) {
-      if (!list_append(ext_list, ext->c_str())) return 0;
-    }
+    for (Py_ssize_t i = 0; i < size; i++)
+      PyList_SET_ITEM(ext_list, i, make_object(exts[i].c_str()));
 
-    Py_INCREF(ext_list);
-    if (!dict_steal(property, "extensions", ext_list)) return 0;
+    if (!dict_set(property, "extensions", ext_list)) return 0;
 
     /**  get recommended codec **/
     PyObject* default_codec = 0;
@@ -492,13 +485,13 @@ static PyObject* get_video_oformats(bool supported) {
         if (!default_codec) return 0;
       }
     }
+    auto default_codec_ = make_xsafe(default_codec);
 
     if (!default_codec) {
-      Py_INCREF(Py_None);
       default_codec = Py_None;
     }
 
-    if (!dict_steal(property, "default_codec", default_codec)) return 0;
+    if (!dict_set(property, "default_codec", default_codec)) return 0;
 
     /** get supported codec list **/
     if (supported) {
@@ -513,21 +506,17 @@ static PyObject* get_video_oformats(bool supported) {
         PyObject* codec_descr = describe_codec(*c);
         auto codec_descr_ = make_safe(codec_descr);
         if (!codec_descr) return 0;
-        Py_INCREF(codec_descr);
-        if (!dict_steal(supported_codecs, (*c)->name, codec_descr)) return 0;
+        if (!dict_set(supported_codecs, (*c)->name, codec_descr)) return 0;
       }
 
-      Py_INCREF(supported_codecs);
-      if (!dict_steal(property, "supported_codecs", supported_codecs)) return 0;
+      if (!dict_set(property, "supported_codecs", supported_codecs)) return 0;
     }
 
-    Py_INCREF(property);
-    if (!dict_steal(retval, k->first.c_str(), property)) return 0;
+    if (!dict_set(retval, k->first.c_str(), property)) return 0;
 
   }
 
-  Py_INCREF(retval);
-  return retval;
+  return Py_BuildValue("O", retval);
 
 }
 
