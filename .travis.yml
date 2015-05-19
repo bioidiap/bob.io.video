@@ -1,40 +1,35 @@
 language: python
+env:
+  global:
+  - secure: TquyIDtjrxz3d9SkrNTP59OuG1/JIEozqUI/tQLHS/3SyYe5ZLjCBhzr0Ay0UmqLQpcoCTp+RSfNzIfHxCqwGqu9+GndXiuHZQAG9FB1gyjBovsHyUki1PAbNSBl/glenNShIFtgpOxKUaYqQ0JjDBdxywOjoqKVJgV27Vk0K0Y=
+  - secure: IVEbgKYaWUwNapbnioa3rrkLbNLe8pZqJIo9YWmO4EHI58qHyVahb1K9KSM0aNIN2gMZY2i5h00w64w9VxFsTJEwse/Cup3UBMVSufT5r+zVpRwXlEmc62BiRgD4PRXkDN74PsZvPYFs0GGFtpZWsg8oqxwZXBBYygHYxcmKN5A=
+  - BOB_UPLOAD_WHEEL=1
 matrix:
   include:
   - python: 2.6
-    env:
-    - MAX_CONCURRENCY=1
   - python: 2.7
     env:
-    - secure: TquyIDtjrxz3d9SkrNTP59OuG1/JIEozqUI/tQLHS/3SyYe5ZLjCBhzr0Ay0UmqLQpcoCTp+RSfNzIfHxCqwGqu9+GndXiuHZQAG9FB1gyjBovsHyUki1PAbNSBl/glenNShIFtgpOxKUaYqQ0JjDBdxywOjoqKVJgV27Vk0K0Y=
-    - secure: IVEbgKYaWUwNapbnioa3rrkLbNLe8pZqJIo9YWmO4EHI58qHyVahb1K9KSM0aNIN2gMZY2i5h00w64w9VxFsTJEwse/Cup3UBMVSufT5r+zVpRwXlEmc62BiRgD4PRXkDN74PsZvPYFs0GGFtpZWsg8oqxwZXBBYygHYxcmKN5A=
     - BOB_DOCUMENTATION_SERVER=https://www.idiap.ch/software/bob/docs/latest/bioidiap/%s/master
-    - MAX_CONCURRENCY=1
-  - python: 3.2
-    env:
-    - NUMPYSPEC===1.7.1
-    - MAX_CONCURRENCY=1
   - python: 3.3
-    env:
-    - NUMPYSPEC===1.8.0
-    - MAX_CONCURRENCY=1
+  - python: 3.4
 before_install:
 - sudo add-apt-repository -y ppa:biometrics/bob
 - sudo apt-get update -qq
 - sudo apt-get install -qq --force-yes libboost-all-dev libblitz1-dev libavcodec-dev libavformat-dev libswscale-dev libhdf5-serial-dev texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended
-- if [ -n "${NUMPYSPEC}" ]; then sudo apt-get install -qq libatlas-dev libatlas-base-dev liblapack-dev gfortran; fi
-- if [ -n "${NUMPYSPEC}" ]; then pip install --find-links http://wheels.astropy.org/ --find-links http://wheels2.astropy.org/ --use-wheel numpy$NUMPYSPEC; fi
-- pip install --find-links http://wheels.astropy.org/ --find-links http://wheels2.astropy.org/ --use-wheel sphinx nose==1.3.0 jinja2==2.6 pillow cpp-coveralls pygments==1.6
-- pip install coveralls
+- pip install --find-links https://www.idiap.ch/software/bob/wheels/travis/ --use-wheel sphinx nose coverage cpp-coveralls pillow
+- pip install --find-links https://www.idiap.ch/software/bob/wheels/travis/ --use-wheel --pre -r requirements.txt coveralls
 install:
 - python bootstrap-buildout.py
-- CPPFLAGS=--coverage LDFLAGS=--coverage ./bin/buildout
+- CPPFLAGS=--coverage LDFLAGS=--coverage ./bin/buildout buildout:debug=false buildout:develop=. buildout:extensions=bob.buildout buildout:auto-checkout=
 script:
-- ./bin/python -c 'from bob.io.video import get_config; print(get_config())'
+- ./bin/python -c 'import pkg_resources; from bob.io.video import get_config; print(get_config())'
 - ./bin/coverage run --source=bob.io.video ./bin/nosetests -sv
 - ./bin/sphinx-build -b doctest doc sphinx
 - ./bin/sphinx-build -b html doc sphinx
 after_success:
 - cpp-coveralls --build-root=`pwd` --exclude=src --exclude-pattern=".*Compiler.*" --dump=cpp_cov.json
 - coveralls --merge=cpp_cov.json
-- ./src/bob.extension/scripts/upload-sphinx.sh
+- wget https://raw.githubusercontent.com/bioidiap/bob.extension/master/scripts/upload-{sphinx,wheel}.sh
+- chmod a+x upload-sphinx.sh upload-wheel.sh
+- ./upload-sphinx.sh
+- ./upload-wheel.sh
