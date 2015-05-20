@@ -241,8 +241,7 @@ static PyObject* create_module (void) {
   auto m_ = make_safe(m); ///< protects against early returns
 
   /* register version numbers and constants */
-  if (PyModule_AddStringConstant(m, "module", BOB_EXT_MODULE_VERSION) < 0)
-    return 0;
+  if (PyModule_AddStringConstant(m, "module", BOB_EXT_MODULE_VERSION) < 0) return 0;
   if (PyModule_AddObject(m, "externals", build_version_dictionary()) < 0) return 0;
 
   /* imports dependencies */

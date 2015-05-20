@@ -663,9 +663,6 @@ static PyObject* create_module (void) {
   if (!m) return 0;
   auto m_ = make_safe(m);
 
-  /* register some constants */
-  if (PyModule_AddStringConstant(m, "__version__", BOB_EXT_MODULE_VERSION) < 0) return 0;
-
   /* register the types to python */
   Py_INCREF(&PyBobIoVideoReader_Type);
   if (PyModule_AddObject(m, "reader", (PyObject *)&PyBobIoVideoReader_Type) < 0) return 0;
