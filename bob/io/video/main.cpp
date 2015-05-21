@@ -12,6 +12,7 @@
 #include <bob.blitz/capi.h>
 #include <bob.blitz/cleanup.h>
 #include <bob.extension/defines.h>
+#include <bob.core/api.h>
 #include <bob.io.base/api.h>
 
 #include "file.h"
@@ -676,17 +677,9 @@ static PyObject* create_module (void) {
   if (PyModule_AddObject(m, "writer", (PyObject *)&PyBobIoVideoWriter_Type) < 0) return 0;
 
   /* imports dependencies */
-  if (import_bob_blitz() < 0) {
-    PyErr_Print();
-    PyErr_Format(PyExc_ImportError, "cannot import `%s'", BOB_EXT_MODULE_NAME);
-    return 0;
-  }
-
-  if (import_bob_io_base() < 0) {
-    PyErr_Print();
-    PyErr_Format(PyExc_ImportError, "cannot import `%s'", BOB_EXT_MODULE_NAME);
-    return 0;
-  }
+  if (import_bob_blitz() < 0) return 0;
+  if (import_bob_core_logging() < 0) return 0;
+  if (import_bob_io_base() < 0) return 0;
 
   /* activates video plugins */
   std::map<std::string, std::string> formats;
@@ -698,9 +691,7 @@ static PyObject* create_module (void) {
     }
   }
 
-  Py_INCREF(m);
-  return m;
-
+  return Py_BuildValue("O", m);
 }
 
 PyMODINIT_FUNC BOB_EXT_ENTRY_NAME (void) {
