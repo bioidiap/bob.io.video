@@ -271,7 +271,7 @@ def detail(function, shape, framerate, format, codec, outdir):
 
 def main(user_input=None):
 
-  from .._library import __version__
+  from ..version import module as __version__
   from .. import test as io_test
 
   parser = argparse.ArgumentParser(description=__doc__, epilog=__epilog__,
