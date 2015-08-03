@@ -6,10 +6,10 @@
    :target: http://pythonhosted.org/bob.io.video/index.html
 .. image:: http://img.shields.io/badge/docs-latest-orange.png
    :target: https://www.idiap.ch/software/bob/docs/latest/bioidiap/bob.io.video/master/index.html
-.. image:: https://travis-ci.org/bioidiap/bob.io.video.svg?branch=master
-   :target: https://travis-ci.org/bioidiap/bob.io.video?branch=master
-.. image:: https://coveralls.io/repos/bioidiap/bob.io.video/badge.png?branch=master
-   :target: https://coveralls.io/r/bioidiap/bob.io.video?branch=master
+.. image:: https://travis-ci.org/bioidiap/bob.io.video.svg?branch=v2.0.3
+   :target: https://travis-ci.org/bioidiap/bob.io.video?branch=v2.0.3
+.. image:: https://coveralls.io/repos/bioidiap/bob.io.video/badge.png?branch=v2.0.3
+   :target: https://coveralls.io/r/bioidiap/bob.io.video?branch=v2.0.3
 .. image:: https://img.shields.io/badge/github-master-0000c0.png
    :target: https://github.com/bioidiap/bob.io.video/tree/master
 .. image:: http://img.shields.io/pypi/v/bob.io.video.png
