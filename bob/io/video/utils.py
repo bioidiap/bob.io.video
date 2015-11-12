@@ -58,7 +58,9 @@ def print_numbers(frame, counter, format, fontsize):
   y_pos = int((height - text_height) / 2)
   # this is buggy in Pillow-2.0.0, so we do it manually
   #img = Image.fromarray(frame.transpose(1,2,0))
-  img = Image.fromstring('RGB', (frame.shape[1], frame.shape[2]), frame.transpose(1,2,0).tostring())
+  # replace fromstring() to frombytes() as fromstring is depricated in Pillow since version 2.0
+  # img = Image.fromstring('RGB', (frame.shape[1], frame.shape[2]), frame.transpose(1,2,0).tostring())
+  img = Image.frombytes('RGB', (frame.shape[1], frame.shape[2]), frame.transpose(1,2,0).tostring())
   draw = ImageDraw.Draw(img)
   draw.text((x_pos, y_pos), text, font=font, fill=(255,255,255))
   return numpy.asarray(img).transpose(2,0,1)
