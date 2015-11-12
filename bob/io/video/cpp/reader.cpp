@@ -86,7 +86,9 @@ namespace bob { namespace io { namespace video {
     }
     else {
       //number of frames is not known
-      m_framerate = av_q2d(format_ctxt->streams[stream_index]->r_frame_rate);
+      m_framerate = av_q2d(format_ctxt->streams[stream_index]->avg_frame_rate);
+      // removed the use of r_frame_rate as it is depricated now and libAV advices to use avg_frame_rate instead
+      //m_framerate = av_q2d(format_ctxt->streams[stream_index]->r_frame_rate);
       m_nframes = (int)(m_framerate * m_duration / AV_TIME_BASE);
     }
 
