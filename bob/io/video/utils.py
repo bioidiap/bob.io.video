@@ -60,7 +60,9 @@ def print_numbers(frame, counter, format, fontsize):
   #img = Image.fromarray(frame.transpose(1,2,0))
   # replace fromstring() to frombytes() as fromstring is depricated in Pillow since version 2.0
   # img = Image.fromstring('RGB', (frame.shape[1], frame.shape[2]), frame.transpose(1,2,0).tostring())
-  img = Image.frombytes('RGB', (frame.shape[1], frame.shape[2]), frame.transpose(1,2,0).tostring())
+  # img = Image.frombytes('RGB', (frame.shape[1], frame.shape[2]), frame.transpose(1,2,0).tostring()) #For some reason there is no frombytes in UBUNTU 12 04
+  img = Image.frombuffer('RGB', (frame.shape[1], frame.shape[2]), frame.transpose(1,2,0).tostring(), 'raw', "RGB", 0,1 ) #This call seems weird, but I follow the instructions from here (http://pillow.readthedocs.org/en/3.0.x/reference/Image.html#PIL.Image.frombuffer). Following these instructions I don't get a warning
+  
   draw = ImageDraw.Draw(img)
   draw.text((x_pos, y_pos), text, font=font, fill=(255,255,255))
   return numpy.asarray(img).transpose(2,0,1)
