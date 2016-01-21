@@ -14,13 +14,13 @@
 #include <bob.io.base/api.h>
 #include <stdexcept>
 
-#include <bob.io.video/writer.h>
+#include "cpp/writer.h"
 
 #define VIDEOWRITER_NAME "writer"
 PyDoc_STRVAR(s_videowriter_str, BOB_EXT_MODULE_PREFIX "." VIDEOWRITER_NAME);
 
 PyDoc_STRVAR(s_videowriter_doc,
-"writer(filename, height, width, [framerate=25., [bitrate=1500000., [gop=12, [codec='', [format='', [check=True]) -> new writer\n\
+"writer(filename, height, width, [framerate=25., [bitrate=1500000., [gop=12, [codec='', [format='', [check=True]]]]]]) -> new writer\n\
 \n\
 Use this object to write frames to video files.\n\
 \n\

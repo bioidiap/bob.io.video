@@ -14,7 +14,7 @@
 #include <bob.io.base/api.h>
 #include <stdexcept>
 
-#include <bob.io.video/reader.h>
+#include "cpp/reader.h"
 
 #define VIDEOREADER_NAME "reader"
 PyDoc_STRVAR(s_videoreader_str, BOB_EXT_MODULE_PREFIX "." VIDEOREADER_NAME);
@@ -393,7 +393,7 @@ static PyObject* PyBobIoVideoReader_Load(PyBobIoVideoReaderObject* self, PyObjec
 
 PyDoc_STRVAR(s_load_str, "load");
 PyDoc_STRVAR(s_load_doc,
-"x.load([raise_on_error=False] -> numpy.ndarray\n\
+"x.load([raise_on_error=False]) -> numpy.ndarray\n\
 \n\
 Loads all of the video stream in a numpy ndarray organized\n\
 in this way: (frames, color-bands, height, width). I'll dynamically\n\

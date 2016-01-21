@@ -7,7 +7,7 @@ bob_packages = ['bob.core', 'bob.io.base']
 
 from setuptools import setup, find_packages, dist
 dist.Distribution(dict(setup_requires=['bob.extension', 'bob.blitz'] + bob_packages))
-from bob.blitz.extension import Extension, Library, build_ext
+from bob.blitz.extension import Extension, build_ext
 from bob.extension import pkgconfig, find_library
 
 from bob.extension.utils import load_requirements
@@ -77,19 +77,6 @@ setup(
         bob_packages = bob_packages,
         version = version,
         define_macros = define_macros,
-      ),
-
-      Library("bob.io.video.bob_io_video",
-        [
-          "bob/io/video/cpp/utils.cpp",
-          "bob/io/video/cpp/reader.cpp",
-          "bob/io/video/cpp/writer.cpp",
-        ],
-        define_macros = define_macros,
-        boost_modules = ['system'],
-        version = version,
-        bob_packages = bob_packages,
-        packages = packages,
       ),
 
       Extension("bob.io.video._library",

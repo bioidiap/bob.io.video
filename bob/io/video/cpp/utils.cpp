@@ -25,7 +25,7 @@ extern "C" {
 #include <bob.core/logging.h>
 #include <bob.core/assert.h>
 
-#include <bob.io.video/utils.h>
+#include "utils.h"
 
 /**
  * Some code to account for older versions of ffmpeg

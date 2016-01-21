@@ -9,7 +9,7 @@
  * Copyright (C) Idiap Research Institute, Martigny, Switzerland
  */
 
-#include <bob.io.video/reader.h>
+#include "reader.h"
 
 #include <stdexcept>
 #include <boost/format.hpp>

@@ -18,9 +18,10 @@
 
 #include <bob.io.base/CodecRegistry.h>
 #include <bob.io.base/File.h>
-#include <bob.io.video/reader.h>
-#include <bob.io.video/writer.h>
-#include <bob.io.video/utils.h>
+
+#include "cpp/reader.h"
+#include "cpp/writer.h"
+#include "cpp/utils.h"
 
 class VideoFile: public bob::io::base::File {
 

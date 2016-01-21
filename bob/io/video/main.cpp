@@ -16,7 +16,8 @@
 #include <bob.io.base/api.h>
 
 #include "file.h"
-#include <bob.io.video/utils.h>
+#include "cpp/utils.h"
+
 
 extern "C" {
 

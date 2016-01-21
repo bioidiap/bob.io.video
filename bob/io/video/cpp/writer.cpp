@@ -9,7 +9,7 @@
  * Copyright (C) Idiap Research Institute, Martigny, Switzerland
  */
 
-#include <bob.io.video/writer.h>
+#include "writer.h"
 
 #include <boost/format.hpp>
 #include <boost/preprocessor.hpp>
@@ -209,6 +209,7 @@ namespace bob { namespace io { namespace video {
       boost::format m("input data type = `%s' does not conform to the specified input specifications (3D array = `%s' or 4D array = `%s'), while writing data to file `%s'");
       m % type.str() % m_typeinfo_frame.str() % m_typeinfo_video.str()
         % m_filename;
+      throw std::runtime_error(m.str());
     }
 
     if ( type.nd == 3 ) { //appends single frame
@@ -262,6 +263,7 @@ namespace bob { namespace io { namespace video {
       boost::format m("input data type information = `%s' does not conform to the specified input specifications (3D array = `%s' or 4D array = `%s'), while writing data to file `%s'");
       m % type.str() % m_typeinfo_frame.str() % m_typeinfo_video.str()
         % m_filename;
+      throw std::runtime_error(m.str());
     }
 
   }
