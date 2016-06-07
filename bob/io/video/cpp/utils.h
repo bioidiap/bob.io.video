@@ -120,9 +120,15 @@ namespace bob { namespace io { namespace video {
    * conjunction with other objects required for file encoding, order must be
    * respected.
    */
+#if LIBAVUTIL_VERSION_INT >= 0x334A64 //51.74.100 @ ffmpeg-3.0
+  boost::shared_ptr<SwsContext> make_scaler(const std::string& filename,
+      boost::shared_ptr<AVCodecContext> stream,
+      AVPixelFormat source_pixel_format, AVPixelFormat dest_pixel_format);
+#else
   boost::shared_ptr<SwsContext> make_scaler(const std::string& filename,
       boost::shared_ptr<AVCodecContext> stream,
       PixelFormat source_pixel_format, PixelFormat dest_pixel_format);
+#endif
 
   /**
    * Allocates a frame for a particular context. The frame space will be
@@ -134,8 +140,13 @@ namespace bob { namespace io { namespace video {
    * conjunction with other objects required for file encoding, order must be
    * respected.
    */
+#if LIBAVUTIL_VERSION_INT >= 0x334A64 //51.74.100 @ ffmpeg-3.0
+  boost::shared_ptr<AVFrame> make_frame(const std::string& filename,
+      boost::shared_ptr<AVCodecContext> stream, AVPixelFormat pixfmt);
+#else
   boost::shared_ptr<AVFrame> make_frame(const std::string& filename,
       boost::shared_ptr<AVCodecContext> stream, PixelFormat pixfmt);
+#endif
 
   /************************************************************************
    * Video reading specific utilities

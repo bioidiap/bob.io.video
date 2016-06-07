@@ -20,8 +20,10 @@
 #define FFMPEG_VIDEO_BUFFER_SIZE 0
 #endif
 
+#if LIBAVUTIL_VERSION_INT < 0x371167 //55.17.103 @ ffmpeg-3.0
 #ifndef AV_PIX_FMT_RGB24
 #define AV_PIX_FMT_RGB24 PIX_FMT_RGB24
+#endif
 #endif
 
 namespace bob { namespace io { namespace video {
@@ -45,7 +47,7 @@ namespace bob { namespace io { namespace video {
     m_codec_context(make_codec_context(filename, m_stream.get(), m_codec)),
     m_context_frame(make_frame(filename, m_codec_context, m_stream->codec->pix_fmt)),
 #if LIBAVCODEC_VERSION_INT >= 0x352a00 //53.42.0 @ ffmpeg-0.9
-    m_swscaler(make_scaler(filename, m_codec_context, PIX_FMT_GBRP, m_stream->codec->pix_fmt)),
+    m_swscaler(make_scaler(filename, m_codec_context, AV_PIX_FMT_GBRP, m_stream->codec->pix_fmt)),
 #else
     m_rgb24_frame(make_frame(filename, m_codec_context, AV_PIX_FMT_RGB24)),
     m_swscaler(make_scaler(filename, m_codec_context, AV_PIX_FMT_RGB24, m_stream->codec->pix_fmt)),

@@ -18,8 +18,10 @@
 
 #include <bob.io.base/blitz_array.h>
 
+#if LIBAVUTIL_VERSION_INT < 0x371167 //55.17.103 @ ffmpeg-3.0
 #ifndef AV_PIX_FMT_RGB24
 #define AV_PIX_FMT_RGB24 PIX_FMT_RGB24
+#endif
 #endif
 
 namespace bob { namespace io { namespace video {
@@ -217,7 +219,7 @@ namespace bob { namespace io { namespace video {
     m_codec_context = make_codec_context(filename,
         m_format_context->streams[m_stream_index], m_codec);
     m_swscaler = make_scaler(filename, m_codec_context,
-        m_codec_context->pix_fmt, PIX_FMT_RGB24);
+        m_codec_context->pix_fmt, AV_PIX_FMT_RGB24);
     m_context_frame = make_empty_frame(filename);
     m_rgb_array.reference(blitz::Array<uint8_t,3>(m_codec_context->height,
           m_codec_context->width, 3));

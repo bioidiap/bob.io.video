@@ -20,6 +20,9 @@ extern "C" {
 #endif
 #include <libavutil/avstring.h>
 #include <libavutil/mathematics.h>
+#if LIBAVCODEC_VERSION_INT >= 0x391866 //57.24.102 @ ffmpeg-3.0
+#include <libavutil/imgutils.h>
+#endif
 }
 
 #include <bob.core/logging.h>
@@ -37,12 +40,14 @@ extern "C" {
 #  define AV_CODEC_ID_MJPEG CODEC_ID_MJPEG
 #endif
 
+#if LIBAVUTIL_VERSION_INT < 0x371167 //55.17.103 @ ffmpeg-3.0
 #ifndef AV_PKT_FLAG_KEY
 #define AV_PKT_FLAG_KEY PKT_FLAG_KEY
 #endif
 
 #ifndef AV_PIX_FMT_YUV420P
 #define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
+#endif
 #endif
 
 #if LIBAVCODEC_VERSION_INT < 0x347a00 //52.122.0 @ ffmpeg-0.7
@@ -752,9 +757,15 @@ static void deallocate_frame(AVFrame* f) {
   }
 }
 
+#if LIBAVUTIL_VERSION_INT >= 0x334A64 //51.74.100 @ ffmpeg-1.0
+boost::shared_ptr<AVFrame>
+bob::io::video::make_frame(const std::string& filename,
+    boost::shared_ptr<AVCodecContext> codec, AVPixelFormat pixfmt) {
+#else
 boost::shared_ptr<AVFrame>
 bob::io::video::make_frame(const std::string& filename,
     boost::shared_ptr<AVCodecContext> codec, PixelFormat pixfmt) {
+#endif
 
   /* allocate and init a re-usable frame */
 #if LIBAVCODEC_VERSION_INT < 0x373466 //55.52.102 @ ffmpeg-2.2
@@ -809,6 +820,7 @@ bob::io::video::make_frame(const std::string& filename,
   retval->width  = codec->width;
   retval->height = codec->height;
 
+#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
   AVPicture picture;
 
   int ok = avpicture_alloc(&picture, pixfmt, codec->width, codec->height);
@@ -821,6 +833,15 @@ bob::io::video::make_frame(const std::string& filename,
 
   /* copy data and linesize picture pointers to frame */
   *((AVPicture *)retval) = picture;
+#else
+  int ok = av_image_alloc(retval->data, retval->linesize, codec->width, codec->height, pixfmt, 1);
+  if (ok < 0) {
+    av_free(retval);
+    boost::format m("bob::io::video::av_image_alloc(data, linesize, width=%d, height=%d, 1) failed: cannot allocate frame/picture buffer start reading or writing video file `%s'");
+    m % codec->width % codec->height % filename;
+    throw std::runtime_error(m.str());
+  }
+#endif
 
 #endif
 
@@ -857,9 +878,15 @@ static void deallocate_swscaler(SwsContext* s) {
   if (s) sws_freeContext(s);
 }
 
+#if LIBAVUTIL_VERSION_INT >= 0x334A64 //51.74.100 @ ffmpeg-1.0
+boost::shared_ptr<SwsContext> bob::io::video::make_scaler
+(const std::string& filename, boost::shared_ptr<AVCodecContext> ctxt,
+ AVPixelFormat source_pixel_format, AVPixelFormat dest_pixel_format) {
+#else
 boost::shared_ptr<SwsContext> bob::io::video::make_scaler
 (const std::string& filename, boost::shared_ptr<AVCodecContext> ctxt,
  PixelFormat source_pixel_format, PixelFormat dest_pixel_format) {
+#endif
 
   /**
    * Initializes the software scaler (SWScale) so we can convert images to
@@ -1109,7 +1136,11 @@ static AVPacket* allocate_packet() {
 }
 
 static void deallocate_packet(AVPacket* p) {
+#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
   if (p->size || p->data) av_free_packet(p);
+#else
+  if (p->size || p->data) av_packet_unref(p);
+#endif
   delete p;
 }
 
@@ -1146,7 +1177,9 @@ void bob::io::video::flush_encoder (const std::string& filename,
 
     /* If size is zero, it means the image was buffered. */
     else if (got_output) {
+#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
       if (stream->codec->coded_frame->key_frame) pkt->flags |= AV_PKT_FLAG_KEY;
+#endif
       pkt->stream_index = stream->index;
 
       /* Write the compressed frame to the media file. */
@@ -1186,11 +1219,13 @@ void bob::io::video::flush_encoder (const std::string& filename,
       AVPacket pkt;
       av_init_packet(&pkt);
 
+#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
       if ((size_t)stream->codec->coded_frame->pts != AV_NOPTS_VALUE)
         pkt.pts = av_rescale_q(stream->codec->coded_frame->pts,
             stream->codec->time_base, stream->time_base);
       if (stream->codec->coded_frame->key_frame)
         pkt.flags |= AV_PKT_FLAG_KEY;
+#endif
 
       pkt.stream_index = stream->index;
       pkt.data         = buffer.get();
@@ -1269,8 +1304,10 @@ void bob::io::video::write_video_frame (const blitz::Array<uint8_t,3>& data,
     /* If size is zero, it means the image was buffered. */
     if (!ok && got_output && pkt->size) {
 
+#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
       if (stream->codec->coded_frame && stream->codec->coded_frame->key_frame)
         pkt->flags |= AV_PKT_FLAG_KEY;
+#endif
 
       pkt->stream_index = stream->index;
 
@@ -1315,11 +1352,13 @@ void bob::io::video::write_video_frame (const blitz::Array<uint8_t,3>& data,
       AVPacket pkt;
       av_init_packet(&pkt);
 
+#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
       if ((size_t)stream->codec->coded_frame->pts != AV_NOPTS_VALUE)
         pkt.pts = av_rescale_q(stream->codec->coded_frame->pts,
             stream->codec->time_base, stream->time_base);
       if (stream->codec->coded_frame->key_frame)
         pkt.flags |= AV_PKT_FLAG_KEY;
+#endif
 
       pkt.stream_index = stream->index;
       pkt.data         = buffer.get();
@@ -1327,7 +1366,11 @@ void bob::io::video::write_video_frame (const blitz::Array<uint8_t,3>& data,
 
       /* Write the compressed frame to the media file. */
       int ok = av_interleaved_write_frame(format_context.get(), &pkt);
+#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
       av_free_packet(&pkt);
+#else
+      av_packet_unref(&pkt);
+#endif
       if (ok && (ok != AVERROR(EINVAL))) {
         boost::format m("bob::io::video::av_interleaved_write_frame() failed: failed to write video frame while encoding file `%s' - ffmpeg reports error %d == `%s'");
         m % filename % ok % ffmpeg_error(ok);
@@ -1422,7 +1465,11 @@ bool bob::io::video::read_video_frame (const std::string& filename,
           swscaler, context_frame, data, pkt, got_frame,
           throw_on_error);
     }
+#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
     av_free_packet(pkt.get());
+#else
+    av_packet_unref(pkt.get());
+#endif
     if (got_frame) return true; //break loop
   }
 
@@ -1516,7 +1563,11 @@ bool bob::io::video::skip_video_frame (const std::string& filename,
       dummy_decode_frame(filename, current_frame, codec_context,
           context_frame, pkt, got_frame, throw_on_error);
     }
+#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
     av_free_packet(pkt.get());
+#else
+    av_packet_unref(pkt.get());
+#endif
     if (got_frame) return true; //break loop
   }
 
