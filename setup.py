@@ -51,7 +51,7 @@ setup(
     name='bob.io.video',
     version=version,
     description='Video I/O support for Bob',
-    url='http://github.com/bioidiap/bob.io.video',
+    url='http://gitlab.idiap.ch/bob/bob.io.video',
     license='BSD',
     author='Andre Anjos',
     author_email='andre.anjos@idiap.ch',
