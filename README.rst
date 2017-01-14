@@ -1,17 +1,17 @@
 .. vim: set fileencoding=utf-8 :
 .. Sun 14 Aug 2016 18:25:23 CEST
 
-.. image:: http://img.shields.io/badge/docs-stable-yellow.png
+.. image:: http://img.shields.io/badge/docs-stable-yellow.svg
    :target: http://pythonhosted.org/bob.io.video/index.html
-.. image:: http://img.shields.io/badge/docs-latest-orange.png
+.. image:: http://img.shields.io/badge/docs-latest-orange.svg
    :target: https://www.idiap.ch/software/bob/docs/latest/bob/bob.io.video/master/index.html
 .. image:: https://gitlab.idiap.ch/bob/bob.io.video/badges/master/build.svg
    :target: https://gitlab.idiap.ch/bob/bob.io.video/commits/master
 .. image:: https://img.shields.io/badge/gitlab-project-0000c0.svg
    :target: https://gitlab.idiap.ch/bob/bob.io.video
-.. image:: http://img.shields.io/pypi/v/bob.io.video.png
+.. image:: http://img.shields.io/pypi/v/bob.io.video.svg
    :target: https://pypi.python.org/pypi/bob.io.video
-.. image:: http://img.shields.io/pypi/dm/bob.io.video.png
+.. image:: http://img.shields.io/pypi/dm/bob.io.video.svg
    :target: https://pypi.python.org/pypi/bob.io.video
 
 
@@ -45,5 +45,5 @@ development `mailing list`_.
 
 .. Place your references here:
 .. _bob: https://www.idiap.ch/software/bob
-.. _installation: https://gitlab.idiap.ch/bob/bob/wikis/Installation
+.. _installation: https://www.idiap.ch/software/bob/install
 .. _mailing list: https://groups.google.com/forum/?fromgroups#!forum/bob-devel
