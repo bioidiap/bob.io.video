@@ -2,9 +2,9 @@
 .. Sun 14 Aug 2016 18:25:23 CEST
 
 .. image:: http://img.shields.io/badge/docs-stable-yellow.svg
-   :target: http://pythonhosted.org/bob.io.video/index.html
+   :target: https://www.idiap.ch/software/bob/docs/bob/bob.io.video/stable/index.html
 .. image:: http://img.shields.io/badge/docs-latest-orange.svg
-   :target: https://www.idiap.ch/software/bob/docs/latest/bob/bob.io.video/master/index.html
+   :target: https://www.idiap.ch/software/bob/docs/bob/bob.io.video/master/index.html
 .. image:: https://gitlab.idiap.ch/bob/bob.io.video/badges/master/build.svg
    :target: https://gitlab.idiap.ch/bob/bob.io.video/commits/master
 .. image:: https://gitlab.idiap.ch/bob/bob.io.video/badges/master/coverage.svg
@@ -12,8 +12,6 @@
 .. image:: https://img.shields.io/badge/gitlab-project-0000c0.svg
    :target: https://gitlab.idiap.ch/bob/bob.io.video
 .. image:: http://img.shields.io/pypi/v/bob.io.video.svg
-   :target: https://pypi.python.org/pypi/bob.io.video
-.. image:: http://img.shields.io/pypi/dm/bob.io.video.svg
    :target: https://pypi.python.org/pypi/bob.io.video
 
 
@@ -31,7 +29,7 @@ writing video files using ``bob.io.base`` functionalities.
 Installation
 ------------
 
-Complete Bob's `installation`_ instructions. Then, to install this pacakge,
+Complete Bob's `installation`_ instructions. Then, to install this package,
 run::
 
   $ conda install bob.io.video
