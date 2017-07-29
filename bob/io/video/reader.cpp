@@ -306,7 +306,8 @@ static auto s_load = bob::extension::FunctionDoc(
   "  The flag ``raise_on_error``, which is set to ``False`` by default influences the error reporting in case problems are found with the video file. "
   "If you set it to ``True``, we will report problems raising exceptions. "
   "If you set it to ``False`` (the default), we will truncate the file at the frame with problems and will not report anything. "
-  "It is your task to verify if the number of frames returned matches the expected number of frames as reported by the :py:attr:`number_of_frames` (or ``len``) of this object."
+  "It is your task to verify if the number of frames returned matches the expected number of frames as reported by the :py:attr:`number_of_frames` (or ``len``) of this object.",
+  true
 )
 .add_prototype("raise_on_error", "video")
 .add_parameter("raise_on_error", "bool", "[Default: ``False``] Raise an excpetion in case of errors?")
