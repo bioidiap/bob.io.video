@@ -39,8 +39,6 @@ typedef struct {
 } PyBobIoVideoReaderIteratorObject;
 extern PyTypeObject PyBobIoVideoReaderIterator_Type;
 
-
-
 // Writer
 typedef struct {
   PyObject_HEAD

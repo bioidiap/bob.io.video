@@ -604,10 +604,6 @@ static PyModuleDef module_definition = {
 
 static PyObject* create_module (void) {
 
-
-  PyBobIoVideoWriter_Type.tp_new = PyType_GenericNew;
-  if (PyType_Ready(&PyBobIoVideoWriter_Type) < 0) return 0;
-
 # if PY_VERSION_HEX >= 0x03000000
   PyObject* module = PyModule_Create(&module_definition);
   auto module_ = make_xsafe(module);
@@ -619,9 +615,7 @@ static PyObject* create_module (void) {
   if (!module) return 0;
 
   if (!init_BobIoVideoReader(module)) return 0;
-
-  Py_INCREF(&PyBobIoVideoWriter_Type);
-  if (PyModule_AddObject(module, "writer", (PyObject *)&PyBobIoVideoWriter_Type) < 0) return 0;
+  if (!init_BobIoVideoWriter(module)) return 0;
 
   /* imports dependencies */
   if (import_bob_blitz() < 0) return 0;
