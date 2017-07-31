@@ -42,23 +42,15 @@ BOB_TRY
   /* Parses input arguments in a single shot */
   char** kwlist = s_reader.kwlist();
 
-  PyObject* filename = 0;
+  char* filename = 0;
 
   PyObject* pycheck = 0;
-  if (!PyArg_ParseTupleAndKeywords(args, kwds, "O&|O", kwlist,
-        &PyBobIo_FilenameConverter, &filename, &pycheck)) return -1;
-
-  auto filename_ = make_safe(filename);
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|O", kwlist,
+        &filename, &pycheck)) return -1;
 
   bool check = (pycheck && PyObject_IsTrue(pycheck));
 
-#if PY_VERSION_HEX >= 0x03000000
-  const char* c_filename = PyBytes_AS_STRING(filename);
-#else
-  const char* c_filename = PyString_AS_STRING(filename);
-#endif
-
-  self->v.reset(new bob::io::video::Reader(c_filename, check));
+  self->v.reset(new bob::io::video::Reader(filename, check));
   return 0; ///< SUCCESS
 BOB_CATCH_MEMBER("constructor", -1)
 }

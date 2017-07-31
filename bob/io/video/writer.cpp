@@ -51,7 +51,7 @@ BOB_TRY
   /* Parses input arguments in a single shot */
   char** kwlist = s_writer.kwlist();
 
-  PyObject* filename = 0;
+  char* filename = 0;
 
   Py_ssize_t height = 0;
   Py_ssize_t width = 0;
@@ -63,20 +63,16 @@ BOB_TRY
   char* format = 0;
   PyObject* pycheck = Py_True;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwds, "O&nn|ddnssO", kwlist,
-        &PyBobIo_FilenameConverter, &filename,
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "snn|ddnssO", kwlist,
+        &filename,
         &height, &width, &framerate, &bitrate, &gop, &codec,
         &format, &pycheck)) return -1;
-
-  auto filename_ = make_safe(filename);
 
   std::string codec_str = codec?codec:"";
   std::string format_str = format?format:"";
   bool check = PyObject_IsTrue(pycheck);
 
-  const char* c_filename = PyString_AS_STRING(filename);
-
-  self->v = boost::make_shared<bob::io::video::Writer>(c_filename,
+  self->v = boost::make_shared<bob::io::video::Writer>(filename,
       height, width, framerate, bitrate, gop, codec_str, format_str, check);
 
   return 0; ///< SUCCESS
