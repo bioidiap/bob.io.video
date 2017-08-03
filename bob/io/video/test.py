@@ -11,7 +11,7 @@
 import os
 import numpy
 import nose.tools
-from bob.io.video import test_utils
+from . import test_utils
 
 from bob.io.base import load
 
@@ -21,7 +21,7 @@ INPUT_VIDEO = test_utils.datafile('test.mov', __name__)
 def test_codec_support():
 
   # Describes all encoders
-  from bob.io.video import describe_encoder, describe_decoder, supported_video_codecs
+  from . import describe_encoder, describe_decoder, supported_video_codecs
 
   supported = supported_video_codecs()
 
@@ -39,7 +39,7 @@ def test_codec_support():
 def test_input_format_support():
 
   # Describes all encoders
-  from bob.io.video import supported_videoreader_formats
+  from . import supported_videoreader_formats
 
   supported = supported_videoreader_formats()
 
@@ -50,7 +50,7 @@ def test_input_format_support():
 def test_output_format_support():
 
   # Describes all encoders
-  from bob.io.video import supported_videowriter_formats
+  from . import supported_videowriter_formats
 
   supported = supported_videowriter_formats()
 
@@ -60,7 +60,7 @@ def test_output_format_support():
 
 def test_video_reader_attributes():
 
-  from bob.io.video import reader
+  from . import reader
 
   iv = reader(INPUT_VIDEO)
 
@@ -89,7 +89,7 @@ def test_video_reader_attributes():
 
 def test_video_reader_str():
 
-  from bob.io.video import reader
+  from . import reader
 
   iv = reader(INPUT_VIDEO)
   assert repr(iv)
@@ -97,7 +97,7 @@ def test_video_reader_str():
 
 def test_can_iterate():
 
-  from bob.io.video import reader
+  from . import reader
   video = reader(INPUT_VIDEO)
   counter = 0
   for frame in video:
@@ -112,7 +112,7 @@ def test_can_iterate():
 
 def test_iteration():
 
-  from bob.io.video import reader
+  from . import reader
   f = reader(INPUT_VIDEO)
   objs = load(INPUT_VIDEO)
 
@@ -122,7 +122,7 @@ def test_iteration():
 
 def test_indexing():
 
-  from bob.io.video import reader
+  from . import reader
   f = reader(INPUT_VIDEO)
 
   nose.tools.eq_(len(f), 375)
@@ -140,7 +140,7 @@ def test_indexing():
 
 def test_slicing_empty():
 
-  from bob.io.video import reader
+  from . import reader
   f = reader(INPUT_VIDEO)
 
   objs = f[1:1]
@@ -149,7 +149,7 @@ def test_slicing_empty():
 
 def test_slicing_0():
 
-  from bob.io.video import reader
+  from . import reader
   f = reader(INPUT_VIDEO)
 
   objs = f[:]
@@ -158,7 +158,7 @@ def test_slicing_0():
 
 def test_slicing_1():
 
-  from bob.io.video import reader
+  from . import reader
   f = reader(INPUT_VIDEO)
 
   s = f[3:10:2]
@@ -170,7 +170,7 @@ def test_slicing_1():
 
 def test_slicing_2():
 
-  from bob.io.video import reader
+  from . import reader
   f = reader(INPUT_VIDEO)
 
   s = f[-10:-2:3]
@@ -181,7 +181,7 @@ def test_slicing_2():
 
 def test_slicing_3():
 
-  from bob.io.video import reader
+  from . import reader
   f = reader(INPUT_VIDEO)
   objs = f.load()
 
@@ -195,7 +195,7 @@ def test_slicing_3():
 
 def test_slicing_4():
 
-  from bob.io.video import reader
+  from . import reader
   f = reader(INPUT_VIDEO)
   objs = f[:21]
 
@@ -210,7 +210,7 @@ def test_slicing_4():
 
 def test_can_use_array_interface():
 
-  from bob.io.video import reader
+  from . import reader
   array = load(INPUT_VIDEO)
   iv = reader(INPUT_VIDEO)
 
@@ -219,10 +219,10 @@ def test_can_use_array_interface():
 
 def test_video_reading_after_writing():
 
-  from bob.io.video import test_utils
+  from . import test_utils
   tmpname = test_utils.temporary_filename(suffix='.avi')
 
-  from bob.io.video import writer, reader
+  from . import writer, reader
 
   try:
 
@@ -248,10 +248,10 @@ def test_video_reading_after_writing():
 
 def test_video_writer_close():
 
-  from bob.io.video import test_utils
+  from . import test_utils
   tmpname = test_utils.temporary_filename(suffix='.avi')
 
-  from bob.io.video import writer, reader
+  from . import writer, reader
 
   try:
 
@@ -281,10 +281,10 @@ def test_video_writer_close():
 
 def test_closed_video_writer_raises():
 
-  from bob.io.video import test_utils
+  from . import test_utils
   tmpname = test_utils.temporary_filename(suffix='.avi')
 
-  from bob.io.video import writer
+  from . import writer
 
   try:
 
