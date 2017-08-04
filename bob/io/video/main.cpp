@@ -11,12 +11,11 @@
 
 #include <bob.blitz/capi.h>
 #include <bob.blitz/cleanup.h>
-#include <bob.extension/defines.h>
+#include <bob.extension/documentation.h>
 #include <bob.core/api.h>
 #include <bob.io.base/api.h>
 
-#include "file.h"
-#include "cpp/utils.h"
+#include "main.h"
 
 
 extern "C" {
@@ -35,26 +34,15 @@ extern "C" {
 
 }
 
-static int dict_set(PyObject* d, const char* key, const char* value) {
-  PyObject* v = Py_BuildValue("s", value);
-  if (!v) return 0;
-  auto v_ = make_safe(v);
-  int retval = PyDict_SetItemString(d, key, v);
-  if (retval == 0) return 1; //all good
-  return 0; //a problem occurred
-}
-
-static int dict_set(PyObject* d, const char* key, PyObject* value) {
-  int retval = PyDict_SetItemString(d, key, value);
-  if (retval == 0) return 1; //all good
-  return 0; //a problem occurred
-}
-
 
 /**
  * Creates an str object, from a C or C++ string. Returns a **new
  * reference**.
  */
+static PyObject* make_object(PyObject* o) {
+  return Py_BuildValue("O", o);
+}
+
 static PyObject* make_object(const char* s) {
   return Py_BuildValue("s", s);
 }
@@ -78,12 +66,11 @@ static PyObject* make_object(double v) {
  * Returns 1 in case of success, 0 in case of failure.
  */
 template <typename T>
-int dict_set_string(PyObject* d, const char* key, T value) {
+bool dict_set(PyObject* d, const char* key, T value) {
   auto pyvalue = make_xsafe(make_object(value));
-  if (!pyvalue) return 0;
+  if (!pyvalue) return false;
   int retval = PyDict_SetItemString(d, key, pyvalue.get());
-  if (retval == 0) return 1; //all good
-  return 0; //a problem occurred
+  return !retval;
 }
 
 /**
@@ -91,21 +78,12 @@ int dict_set_string(PyObject* d, const char* key, T value) {
  * Returns 1 in case of success, 0 in case of faiulre.
  */
 template <typename T>
-int list_append(PyObject* l, T value) {
+bool list_append(PyObject* l, T value) {
   auto pyvalue = make_xsafe(make_object(value));
-  if (!pyvalue) return 0;
+  if (!pyvalue) return false;
   int retval = PyList_Append(l, pyvalue.get());
-  if (retval == 0) return 1; //all good
-  return 0; //a problem occurred
+  return !retval;
 }
-
-/**
- * A deleter, for shared_ptr's
- */
-void pyobject_deleter(PyObject* o) {
-  Py_XDECREF(o);
-}
-
 /**
  *  * Checks if it is a Python string for Python 2.x or 3.x
  *   */
@@ -113,7 +91,7 @@ int check_string(PyObject* o) {
 #     if PY_VERSION_HEX >= 0x03000000
         return PyUnicode_Check(o);
 #     else
-              return PyString_Check(o);
+        return PyString_Check(o);
 #     endif
 }
 
@@ -133,9 +111,9 @@ static PyObject* describe_codec(const AVCodec* codec) {
   auto retval_ = make_safe(retval);
 
   /* Sets basic properties for the codec */
-  if (!dict_set_string(retval, "name", codec->name)) return 0;
-  if (!dict_set_string(retval, "long_name", codec->long_name)) return 0;
-  if (!dict_set_string(retval, "id", (unsigned int)codec->id)) return 0;
+  if (!dict_set(retval, "name", codec->name)) return 0;
+  if (!dict_set(retval, "long_name", codec->long_name)) return 0;
+  if (!dict_set(retval, "id", (unsigned int)codec->id)) return 0;
 
   /**
    * If pixel formats are available, creates and attaches a
@@ -186,19 +164,19 @@ static PyObject* describe_codec(const AVCodec* codec) {
 
   /* Other codec capabilities */
 # ifdef CODEC_CAP_LOSSLESS
-  if (!dict_set_string(retval, "lossless", (bool)(codec->capabilities & CODEC_CAP_LOSSLESS))) return 0;
+  if (!dict_set(retval, "lossless", (bool)(codec->capabilities & CODEC_CAP_LOSSLESS))) return 0;
 # endif
 # ifdef CODEC_CAP_EXPERIMENTAL
-  if (!dict_set_string(retval, "experimental", (bool)(codec->capabilities & CODEC_CAP_EXPERIMENTAL))) return 0;
+  if (!dict_set(retval, "experimental", (bool)(codec->capabilities & CODEC_CAP_EXPERIMENTAL))) return 0;
 # endif
 # ifdef CODEC_CAP_DELAY
-  if (!dict_set_string(retval, "delay", (bool)(codec->capabilities & CODEC_CAP_DELAY))) return 0;
+  if (!dict_set(retval, "delay", (bool)(codec->capabilities & CODEC_CAP_DELAY))) return 0;
 # endif
 # ifdef CODEC_CAP_HWACCEL
-  if (!dict_set_string(retval, "hardware_accelerated", (bool)(codec->capabilities & CODEC_CAP_HWACCEL))) return 0;
+  if (!dict_set(retval, "hardware_accelerated", (bool)(codec->capabilities & CODEC_CAP_HWACCEL))) return 0;
 # endif
-  if (!dict_set_string(retval, "encode", (bool)(avcodec_find_encoder(codec->id)))) return 0;
-  if (!dict_set_string(retval, "decode", (bool)(avcodec_find_decoder(codec->id)))) return 0;
+  if (!dict_set(retval, "encode", (bool)(avcodec_find_encoder(codec->id)))) return 0;
+  if (!dict_set(retval, "decode", (bool)(avcodec_find_decoder(codec->id)))) return 0;
 
   /* If all went OK, detach the returned value from the smart pointer **/
   return Py_BuildValue("O", retval);
@@ -208,11 +186,18 @@ static PyObject* describe_codec(const AVCodec* codec) {
 /**
  * Describes a given codec or raises, in case the codec cannot be accessed
  */
+auto s_describe_encoder = bob::extension::FunctionDoc(
+  "describe_encoder",
+  "Returns a dictionary containing a description of properties in the given encoder."
+)
+.add_prototype("key", "description")
+.add_parameter("key", "`int` or `str`", "A key which can be either the encoder name or its numerical identifier.")
+.add_return("description", "dict", "The description of the requested encoder")
+;
 static PyObject* PyBobIoVideo_DescribeEncoder(PyObject*, PyObject *args, PyObject* kwds) {
-
+BOB_TRY
   /* Parses input arguments in a single shot */
-  static const char* const_kwlist[] = {"key", 0};
-  static char** kwlist = const_cast<char**>(const_kwlist);
+  char** kwlist = s_describe_encoder.kwlist();
 
   PyObject* key = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &key)) return 0;
@@ -248,30 +233,25 @@ static PyObject* PyBobIoVideo_DescribeEncoder(PyObject*, PyObject *args, PyObjec
   }
 
   return describe_codec(codec);
+BOB_CATCH_FUNCTION("describe_encoder", 0)
 }
 
-PyDoc_STRVAR(s_describe_encoder_str, "describe_encoder");
-PyDoc_STRVAR(s_describe_encoder_doc,
-"describe_encoder([key]) -> dict\n\
-\n\
-Parameters:\n\
-\n\
-key\n\
-  [int|str, optional] A key which can be either the encoder\n\
-  name or its numerical identifier.\n\
-\n\
-Returns a dictionary containing a description of properties in\n\
-the given encoder.\n\
-");
 
 /**
  * Describes a given codec or raises, in case the codec cannot be accessed
  */
+auto s_describe_decoder = bob::extension::FunctionDoc(
+  "describe_decoder",
+  "Returns a dictionary containing a description of properties in the given decoder."
+)
+.add_prototype("key", "description")
+.add_parameter("key", "`int` or `str`", "A key which can be either the decoder name or its numerical identifier.")
+.add_return("description", "dict", "The description of the requested encoder")
+;
 static PyObject* PyBobIoVideo_DescribeDecoder(PyObject*, PyObject *args, PyObject* kwds) {
-
+BOB_TRY
   /* Parses input arguments in a single shot */
-  static const char* const_kwlist[] = {"key", 0};
-  static char** kwlist = const_cast<char**>(const_kwlist);
+  char** kwlist = s_describe_decoder.kwlist();
 
   PyObject* key = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &key)) return 0;
@@ -307,76 +287,62 @@ static PyObject* PyBobIoVideo_DescribeDecoder(PyObject*, PyObject *args, PyObjec
   }
 
   return describe_codec(codec);
+BOB_CATCH_FUNCTION("describe_decoder", 0)
 }
 
-PyDoc_STRVAR(s_describe_decoder_str, "describe_decoder");
-PyDoc_STRVAR(s_describe_decoder_doc,
-"describe_decoder([key]) -> dict\n\
-\n\
-Parameters:\n\
-\n\
-key\n\
-  [int|str, optional] A key which can be either the decoder\n\
-  name or its numerical identifier.\n\
-\n\
-Returns a dictionary containing a description of properties in\n\
-the given decoder.\n\
-");
 
-static PyObject* get_video_codecs(void (*f)(std::map<std::string, const AVCodec*>&)) {
-
+static PyObject* get_video_codecs(bool supported) {
+BOB_TRY
   std::map<std::string, const AVCodec*> m;
-  f(m);
+  if (supported)
+    bob::io::video::codecs_supported(m);
+  else
+    bob::io::video::codecs_installed(m);
 
   PyObject* retval = PyDict_New();
   if (!retval) return 0;
   auto retval_ = make_safe(retval);
 
   for (auto k=m.begin(); k!=m.end(); ++k) {
-    PyObject* pyvalue = describe_codec(k->second);
-    if (!pyvalue) return 0;
-    auto pyvalue_ = make_safe(pyvalue);
-    if (PyDict_SetItemString(retval, k->first.c_str(), pyvalue) != 0) return 0;
+    dict_set(retval, k->first.c_str(), describe_codec(k->second));
   }
 
-  Py_INCREF(retval);
-  return retval;
-
+  return Py_BuildValue("O", retval);
+BOB_CATCH_FUNCTION("get_video_codecs", 0)
 }
 
+auto s_supported_codecs = bob::extension::FunctionDoc(
+  "supported_video_codecs",
+  "Returns a dictionary with currently supported video codec properties",
+  "Returns a dictionary containing a detailed description of the built-in codecs for videos that are fully supported."
+)
+.add_prototype("", "codecs")
+.add_return("codecs", "dict", "A dictionary of supported codecs")
+;
 static PyObject* PyBobIoVideo_SupportedCodecs(PyObject*) {
-  return get_video_codecs(&bob::io::video::codecs_supported);
+  return get_video_codecs(true);
 }
 
+auto s_available_codecs = bob::extension::FunctionDoc(
+  "available_video_codecs",
+  "Returns a dictionary with currently supported video codec properties",
+  "Returns a dictionary containing a detailed description of the built-in codecs for videos that are available but **not necessarily supported**."
+)
+.add_prototype("", "codecs")
+.add_return("codecs", "dict", "A dictionary of available codecs")
+;
 static PyObject* PyBobIoVideo_AvailableCodecs(PyObject*) {
-  return get_video_codecs(&bob::io::video::codecs_installed);
+  return get_video_codecs(false);
 }
 
-PyDoc_STRVAR(s_supported_codecs_str, "supported_video_codecs");
-PyDoc_STRVAR(s_supported_codecs_doc,
-"supported_video_codecs() -> dict\n\
-\n\
-Returns a dictionary with currently supported video codec properties.\n\
-\n\
-Returns a dictionary containing a detailed description of the\n\
-built-in codecs for videos that are fully supported.\n\
-");
 
-PyDoc_STRVAR(s_available_codecs_str, "available_video_codecs");
-PyDoc_STRVAR(s_available_codecs_doc,
-"available_video_codecs() -> dict\n\
-\n\
-Returns a dictionary with all available video codec properties.\n\
-\n\
-Returns a dictionary containing a detailed description of the\n\
-built-in codecs for videos that are available but **not necessarily\n\
-supported**.\n\
-");
-
-static PyObject* get_video_iformats(void (*f)(std::map<std::string, AVInputFormat*>&)) {
-
+static PyObject* get_video_iformats(bool supported) {
+BOB_TRY
   std::map<std::string, AVInputFormat*> m;
-  f(m);
+  if (supported)
+    bob::io::video::iformats_supported(m);
+  else
+    bob::io::video::iformats_installed(m);
 
   PyObject* retval = PyDict_New();
   if (!retval) return 0;
@@ -411,43 +377,41 @@ static PyObject* get_video_iformats(void (*f)(std::map<std::string, AVInputForma
   }
 
   return Py_BuildValue("O", retval);
-
+BOB_CATCH_FUNCTION("get_video_iformats", 0)
 }
 
+auto s_supported_iformats = bob::extension::FunctionDoc(
+  "supported_videoreader_formats",
+  "Returns a dictionary with currently supported video input formats",
+  "Returns a dictionary containing a detailed description of the built-in input formats for videos that are fully supported."
+)
+.add_prototype("", "formats")
+.add_return("formats", "dict", "A dictionary of supported input formats")
+;
 static PyObject* PyBobIoVideo_SupportedInputFormats(PyObject*) {
-  return get_video_iformats(&bob::io::video::iformats_supported);
+  return get_video_iformats(true);
 }
 
+auto s_available_iformats = bob::extension::FunctionDoc(
+  "available_videoreader_formats",
+  "Returns a dictionary with currently available video input formats",
+  "Returns a dictionary containing a detailed description of the built-in input formats for videos that are available, but **not necessarily supported** by this library."
+)
+.add_prototype("", "formats")
+.add_return("formats", "dict", "A dictionary of available input formats")
+;
 static PyObject* PyBobIoVideo_AvailableInputFormats(PyObject*) {
-  return get_video_iformats(&bob::io::video::iformats_installed);
+  return get_video_iformats(false);
 }
 
-PyDoc_STRVAR(s_supported_iformats_str, "supported_videoreader_formats");
-PyDoc_STRVAR(s_supported_iformats_doc,
-"supported_videoreader_formats() -> dict\n\
-\n\
-Returns a dictionary with currently supported video input formats.\n\
-\n\
-Returns a dictionary containing a detailed description of the\n\
-built-in input formats for videos that are fully supported.\n\
-");
-
-PyDoc_STRVAR(s_available_iformats_str, "available_videoreader_formats");
-PyDoc_STRVAR(s_available_iformats_doc,
-"available_videoreader_formats() -> dict\n\
-\n\
-Returns a dictionary with currently available video input formats.\n\
-\n\
-Returns a dictionary containing a detailed description of the\n\
-built-in input formats for videos that are available, but **not\n\
-necessarily supported** by this library.\n\
-");
 
 static PyObject* get_video_oformats(bool supported) {
-
+BOB_TRY
   std::map<std::string, AVOutputFormat*> m;
-  if (supported) bob::io::video::oformats_supported(m);
-  else bob::io::video::oformats_installed(m);
+  if (supported)
+    bob::io::video::oformats_supported(m);
+  else
+    bob::io::video::oformats_installed(m);
 
   PyObject* retval = PyDict_New();
   if (!retval) return 0;
@@ -519,37 +483,33 @@ static PyObject* get_video_oformats(bool supported) {
   }
 
   return Py_BuildValue("O", retval);
-
+BOB_CATCH_FUNCTION("get_video_oformats", 0)
 }
 
+auto s_supported_oformats = bob::extension::FunctionDoc(
+  "supported_videowriter_formats",
+  "Returns a dictionary with currently supported video output formats",
+  "Returns a dictionary containing a detailed description of the built-in output formats for videos that are fully supported."
+)
+.add_prototype("", "formats")
+.add_return("formats", "dict", "A dictionary of supported output formats")
+;
 static PyObject* PyBobIoVideo_SupportedOutputFormats(PyObject*) {
   return get_video_oformats(true);
 }
 
+auto s_available_oformats = bob::extension::FunctionDoc(
+  "available_videowriter_formats",
+  "Returns a dictionary with currently available video output formats",
+  "Returns a dictionary containing a detailed description of the built-in output formats for videos that are available, but **not necessarily supported** by this library."
+)
+.add_prototype("", "formats")
+.add_return("formats", "dict", "A dictionary of available output formats")
+;
 static PyObject* PyBobIoVideo_AvailableOutputFormats(PyObject*) {
   return get_video_oformats(false);
 }
 
-PyDoc_STRVAR(s_supported_oformats_str, "supported_videowriter_formats");
-PyDoc_STRVAR(s_supported_oformats_doc,
-"supported_videowriter_formats() -> dict\n\
-\n\
-Returns a dictionary with currently supported video output formats.\n\
-\n\
-Returns a dictionary containing a detailed description of the\n\
-built-in output formats for videos that are fully supported.\n\
-");
-
-PyDoc_STRVAR(s_available_oformats_str, "available_videowriter_formats");
-PyDoc_STRVAR(s_available_oformats_doc,
-"available_videowriter_formats() -> dict\n\
-\n\
-Returns a dictionary with currently available video output formats.\n\
-\n\
-Returns a dictionary containing a detailed description of the\n\
-built-in output formats for videos that are available, but **not\n\
-necessarily supported** by this library.\n\
-");
 
 /**
  * Arranges a listing of input and output file formats
@@ -579,52 +539,52 @@ static void list_formats(std::map<std::string, std::string>& formats) {
 
 static PyMethodDef module_methods[] = {
     {
-      s_describe_encoder_str,
+      s_describe_encoder.name(),
       (PyCFunction)PyBobIoVideo_DescribeEncoder,
       METH_VARARGS|METH_KEYWORDS,
-      s_describe_encoder_doc,
+      s_describe_encoder.doc(),
     },
     {
-      s_describe_decoder_str,
+      s_describe_decoder.name(),
       (PyCFunction)PyBobIoVideo_DescribeDecoder,
       METH_VARARGS|METH_KEYWORDS,
-      s_describe_decoder_doc,
+      s_describe_decoder.doc(),
     },
     {
-      s_supported_codecs_str,
+      s_supported_codecs.name(),
       (PyCFunction)PyBobIoVideo_SupportedCodecs,
       METH_NOARGS,
-      s_supported_codecs_doc,
+      s_supported_codecs.doc(),
     },
     {
-      s_available_codecs_str,
+      s_available_codecs.name(),
       (PyCFunction)PyBobIoVideo_AvailableCodecs,
       METH_NOARGS,
-      s_available_codecs_doc,
+      s_available_codecs.doc(),
     },
     {
-      s_supported_iformats_str,
+      s_supported_iformats.name(),
       (PyCFunction)PyBobIoVideo_SupportedInputFormats,
       METH_NOARGS,
-      s_supported_iformats_doc,
+      s_supported_iformats.doc(),
     },
     {
-      s_available_iformats_str,
+      s_available_iformats.name(),
       (PyCFunction)PyBobIoVideo_AvailableInputFormats,
       METH_NOARGS,
-      s_available_iformats_doc,
+      s_available_iformats.doc(),
     },
     {
-      s_supported_oformats_str,
+      s_supported_oformats.name(),
       (PyCFunction)PyBobIoVideo_SupportedOutputFormats,
       METH_NOARGS,
-      s_supported_oformats_doc,
+      s_supported_oformats.doc(),
     },
     {
-      s_available_oformats_str,
+      s_available_oformats.name(),
       (PyCFunction)PyBobIoVideo_AvailableOutputFormats,
       METH_NOARGS,
-      s_available_oformats_doc,
+      s_available_oformats.doc(),
     },
     {0}  /* Sentinel */
 };
@@ -642,42 +602,20 @@ static PyModuleDef module_definition = {
 };
 #endif
 
-extern PyTypeObject PyBobIoVideoReader_Type;
-extern PyTypeObject PyBobIoVideoReaderIterator_Type;
-extern PyTypeObject PyBobIoVideoWriter_Type;
-
 static PyObject* create_module (void) {
 
-  PyBobIoVideoReader_Type.tp_new = PyType_GenericNew;
-  if (PyType_Ready(&PyBobIoVideoReader_Type) < 0) return 0;
-
-  PyBobIoVideoReaderIterator_Type.tp_new = PyType_GenericNew;
-  if (PyType_Ready(&PyBobIoVideoReaderIterator_Type) < 0) return 0;
-
-  PyBobIoVideoWriter_Type.tp_new = PyType_GenericNew;
-  if (PyType_Ready(&PyBobIoVideoWriter_Type) < 0) return 0;
-
 # if PY_VERSION_HEX >= 0x03000000
-  PyObject* m = PyModule_Create(&module_definition);
-  auto m_ = make_xsafe(m);
+  PyObject* module = PyModule_Create(&module_definition);
+  auto module_ = make_xsafe(module);
   const char* ret = "O";
 # else
-  PyObject* m = Py_InitModule3(BOB_EXT_MODULE_NAME, module_methods, module_docstr);
+  PyObject* module = Py_InitModule3(BOB_EXT_MODULE_NAME, module_methods, module_docstr);
   const char* ret = "N";
 # endif
-  if (!m) return 0;
+  if (!module) return 0;
 
-  /* register the types to python */
-  Py_INCREF(&PyBobIoVideoReader_Type);
-  if (PyModule_AddObject(m, "reader", (PyObject *)&PyBobIoVideoReader_Type) < 0) return 0;
-
-  /** not required for iterators
-  Py_INCREF(&PyBobIoVideoReaderIterator_Type);
-  if (PyModule_AddObject(m, "__reader_iter__", (PyObject *)&PyBobIoVideoReaderIterator_Type) < 0) return 0;
-  **/
-
-  Py_INCREF(&PyBobIoVideoWriter_Type);
-  if (PyModule_AddObject(m, "writer", (PyObject *)&PyBobIoVideoWriter_Type) < 0) return 0;
+  if (!init_BobIoVideoReader(module)) return 0;
+  if (!init_BobIoVideoWriter(module)) return 0;
 
   /* imports dependencies */
   if (import_bob_blitz() < 0) return 0;
@@ -694,7 +632,7 @@ static PyObject* create_module (void) {
     }
   }
 
-  return Py_BuildValue(ret, m);
+  return Py_BuildValue(ret, module);
 }
 
 PyMODINIT_FUNC BOB_EXT_ENTRY_NAME (void) {
