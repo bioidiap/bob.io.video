@@ -17,6 +17,7 @@ from bob.io.base import load
 
 # These are some global parameters for the test.
 INPUT_VIDEO = test_utils.datafile('test.mov', __name__)
+UNICODE_VIDEO = test_utils.datafile('test_straße.mov', __name__)
 
 def test_codec_support():
 
@@ -86,6 +87,17 @@ def test_video_reader_attributes():
   nose.tools.eq_(len(iv.video_type[1]), len(iv.frame_type[1])+1)
   nose.tools.eq_(len(iv.video_type[2]), len(iv.frame_type[2])+1)
   assert isinstance(iv.info, str)
+
+def test_video_reader_unicode():
+
+  from . import reader
+
+  iv = reader(UNICODE_VIDEO)
+
+  assert isinstance(iv.filename, str)
+  assert 'ß' in UNICODE_VIDEO
+  assert 'ß' in iv.filename
+
 
 def test_video_reader_str():
 
