@@ -138,7 +138,7 @@ def test_base_load_on_unicode():
   objs = load(UNICODE_VIDEO)
 
   nose.tools.eq_(len(f), len(objs))
-  for l, i in zip(objs, f)[:5]:
+  for l, i in zip(objs, f):
     assert numpy.allclose(l, i)
 
 def test_indexing():
