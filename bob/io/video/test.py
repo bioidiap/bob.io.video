@@ -98,7 +98,6 @@ def test_video_reader_unicode():
   assert 'ß' in UNICODE_VIDEO
   assert 'ß' in iv.filename
 
-
 def test_video_reader_str():
 
   from . import reader
@@ -130,6 +129,16 @@ def test_iteration():
 
   nose.tools.eq_(len(f), len(objs))
   for l, i in zip(objs, f):
+    assert numpy.allclose(l, i)
+
+def test_base_load_on_unicode():
+
+  from . import reader
+  f = reader(UNICODE_VIDEO)
+  objs = load(UNICODE_VIDEO)
+
+  nose.tools.eq_(len(f), len(objs))
+  for l, i in zip(objs, f)[:5]:
     assert numpy.allclose(l, i)
 
 def test_indexing():
