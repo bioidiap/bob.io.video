@@ -115,7 +115,7 @@ def test_video_reader_unicode():
   assert 'ß' in UNICODE_VIDEO
   assert 'ß' in iv.filename
 
-  os.unlink(UNICODE_VIDEO)
+  os.remove(UNICODE_VIDEO)
 
 def test_video_reader_str():
 
@@ -163,7 +163,7 @@ def test_base_load_on_unicode():
   for l, i in zip(objs, f):
     assert numpy.allclose(l.shape, i.shape)
 
-  os.unlink(UNICODE_VIDEO)
+  os.remove(UNICODE_VIDEO)
   
 def test_indexing():
 
