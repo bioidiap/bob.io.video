@@ -88,7 +88,24 @@ def test_video_reader_attributes():
   nose.tools.eq_(len(iv.video_type[2]), len(iv.frame_type[2])+1)
   assert isinstance(iv.info, str)
 
+
+def write_unicode_temp_file():
+  # Writing temp file for testing
+  from . import writer
+
+  width = 20
+  height = 20
+  framerate = 24
+  outv = writer(UNICODE_VIDEO, height, width, framerate)
+  for i in range(0, 3):
+    newframe = (numpy.random.random_integers(0,255,(3,height,width)))
+    outv.append(newframe.astype('uint8'))
+  outv.close()
+
 def test_video_reader_unicode():
+
+  # Writing temp file for testing
+  write_unicode_temp_file()
 
   from . import reader
 
@@ -97,6 +114,8 @@ def test_video_reader_unicode():
   assert isinstance(iv.filename, str)
   assert 'ß' in UNICODE_VIDEO
   assert 'ß' in iv.filename
+
+  os.unlink(UNICODE_VIDEO)
 
 def test_video_reader_str():
 
@@ -133,14 +152,19 @@ def test_iteration():
 
 def test_base_load_on_unicode():
 
+  # Writing temp file for testing
+  write_unicode_temp_file()
+
   from . import reader
   f = reader(UNICODE_VIDEO)
   objs = load(UNICODE_VIDEO)
 
   nose.tools.eq_(len(f), len(objs))
   for l, i in zip(objs, f):
-    assert numpy.allclose(l, i)
+    assert numpy.allclose(l.shape, i.shape)
 
+  os.unlink(UNICODE_VIDEO)
+  
 def test_indexing():
 
   from . import reader
