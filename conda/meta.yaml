@@ -1,0 +1,66 @@
+{% set name = 'bob.io.video' %}
+{% set project_dir = environ.get('RECIPE_DIR') + '/..' %}
+
+package:
+  name: {{ name }}
+  version: {{ environ.get('BOB_PACKAGE_VERSION', '0.0.1') }}
+
+build:
+  entry_points:
+    - bob_video_test.py = bob.io.video.script.video_test:main
+  number: {{ environ.get('BOB_BUILD_NUMBER', 0) }}
+  run_exports:
+    - {{ pin_subpackage(name) }}
+  script:
+    - cd {{ project_dir }}
+    {% if environ.get('BUILD_EGG') %}
+    - python setup.py sdist --formats=zip
+    {% endif %}
+    - python setup.py install --single-version-externally-managed --record record.txt
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - pkg-config {{ pkg_config }}
+  host:
+    - python {{ python }}
+    - setuptools {{ setuptools }}
+    - pillow {{ pillow }}
+    - bob.extension >2.0.4
+    - bob.blitz
+    - bob.core
+    - bob.io.base
+    - libblitz {{ libblitz }}
+    - ffmpeg {{ ffmpeg }}
+    - boost {{ boost }}
+    - numpy {{ numpy }}
+  run:
+    - python
+    - setuptools
+    - pillow
+    - boost
+    - {{ pin_compatible('numpy') }}
+
+test:
+  imports:
+    - {{ name }}
+  commands:
+    - bob_video_test.py --help
+    - nosetests --with-coverage --cover-package={{ name }} -sv {{ name }}
+    - sphinx-build -aEW {{ project_dir }}/doc {{ project_dir }}/sphinx
+    - sphinx-build -aEb doctest {{ project_dir }}/doc sphinx
+    - conda inspect linkages -p $PREFIX {{ name }}  # [not win]
+    - conda inspect objects -p $PREFIX {{ name }}  # [osx]
+  requires:
+    - bob-devel {{ bob_devel }}.*
+    - nose
+    - coverage
+    - sphinx
+    - sphinx_rtd_theme
+
+about:
+  home: https://www.idiap.ch/software/bob/
+  license: BSD 3-Clause
+  summary: Video I/O support for Bob
+  license_family: BSD
