@@ -78,7 +78,7 @@ def test_format_codecs():
       # older, but still good quality encoders
       mjpeg      = dict(frameskip=1.2,  color=9.0, noise=50.),
       mpegvideo  = dict(frameskip=1.3,  color=9.0, noise=55.),
-      mpeg2video = dict(frameskip=1.3,  color=9.0, noise=55.),
+      mpeg2video = dict(frameskip=1.3,  color=9.0, noise=75.),
       mpeg1video = dict(frameskip=1.4,  color=9.0, noise=50.),
 
       # low quality encoders - avoid using - available for compatibility
