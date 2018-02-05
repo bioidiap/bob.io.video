@@ -69,7 +69,7 @@ def test_format_codecs():
       ffv1       = dict(frameskip=0.05, color=9.,  noise=46.),
       vp8        = dict(frameskip=0.3,  color=9.0, noise=65.),
       libvpx     = dict(frameskip=0.3,  color=9.0, noise=65.),
-      h264       = dict(frameskip=0.4,  color=9.0, noise=50.),
+      h264       = dict(frameskip=0.5,  color=9.0, noise=55.),
       libx264    = dict(frameskip=0.4,  color=9.0, noise=50.),
       theora     = dict(frameskip=0.5,  color=9.0, noise=70.),
       libtheora  = dict(frameskip=0.5,  color=9.0, noise=70.),
@@ -77,8 +77,8 @@ def test_format_codecs():
 
       # older, but still good quality encoders
       mjpeg      = dict(frameskip=1.2,  color=9.0, noise=50.),
-      mpegvideo  = dict(frameskip=1.3,  color=9.0, noise=55.),
-      mpeg2video = dict(frameskip=1.3,  color=9.0, noise=55.),
+      mpegvideo  = dict(frameskip=1.3,  color=9.0, noise=75.),
+      mpeg2video = dict(frameskip=1.3,  color=9.0, noise=75.),
       mpeg1video = dict(frameskip=1.4,  color=9.0, noise=50.),
 
       # low quality encoders - avoid using - available for compatibility
@@ -121,7 +121,7 @@ def check_user_video(format, codec, maxdist):
 
     # encode the input video using the format and codec provided by the user
     outv = writer(fname, oheight, owidth, orig_vreader.frame_rate,
-        codec=codec, format=format)
+        codec=codec, format=format, check=False)
     for k in orig: outv.append(k)
     outv.close()
 
@@ -158,7 +158,7 @@ def test_user_video():
       ffv1       = 1.7,
       vp8        = 2.7,
       libvpx     = 2.7,
-      h264       = 2.5,
+      h264       = 2.7,
       libx264    = 2.5,
       theora     = 2.0,
       libtheora  = 2.0,
