@@ -17,7 +17,7 @@ from bob.io.base import load
 
 # These are some global parameters for the test.
 INPUT_VIDEO = test_utils.datafile('test.mov', __name__)
-UNICODE_VIDEO = test_utils.datafile('test_straße.mov', __name__)
+
 
 def test_codec_support():
 
@@ -32,10 +32,11 @@ def test_codec_support():
     if v['encode']: assert describe_encoder(v['id'])
 
   # Assert we support, at least, some known codecs
-  for codec in ('ffv1', 'wmv2', 'mpeg4', 'mjpeg'):
+  for codec in ('ffv1', 'wmv2', 'mpeg4', 'mjpeg', 'h264'):
     assert codec in supported
     assert supported[codec]['encode']
     assert supported[codec]['decode']
+
 
 def test_input_format_support():
 
@@ -48,6 +49,7 @@ def test_input_format_support():
   for fmt in ('avi', 'mov', 'mp4'):
     assert fmt in supported
 
+
 def test_output_format_support():
 
   # Describes all encoders
@@ -58,6 +60,7 @@ def test_output_format_support():
   # Assert we support, at least, some known codecs
   for fmt in ('avi', 'mov', 'mp4'):
     assert fmt in supported
+
 
 def test_video_reader_attributes():
 
@@ -90,32 +93,46 @@ def test_video_reader_attributes():
 
 
 def write_unicode_temp_file():
+
+  prefix = 'bobtest_straße_'
+  suffix = '.avi'
+
+  tmpname = test_utils.temporary_filename(prefix=prefix, suffix=suffix)
+
   # Writing temp file for testing
   from . import writer
 
   width = 20
   height = 20
   framerate = 24
-  outv = writer(UNICODE_VIDEO, height, width, framerate)
+  outv = writer(tmpname, height, width, framerate)
+
   for i in range(0, 3):
     newframe = (numpy.random.random_integers(0,255,(3,height,width)))
     outv.append(newframe.astype('uint8'))
+
   outv.close()
+  return tmpname
+
 
 def test_video_reader_unicode():
 
-  # Writing temp file for testing
-  write_unicode_temp_file()
+  try:
 
-  from . import reader
+    # Writing temp file for testing
+    tmpname = write_unicode_temp_file()
 
-  iv = reader(UNICODE_VIDEO)
+    from . import reader
 
-  assert isinstance(iv.filename, str)
-  assert 'ß' in UNICODE_VIDEO
-  assert 'ß' in iv.filename
+    iv = reader(tmpname)
 
-  #os.remove(UNICODE_VIDEO)
+    assert isinstance(iv.filename, str)
+    assert 'ß' in tmpname
+    assert 'ß' in iv.filename
+
+  finally:
+    if os.path.exists(tmpname): os.unlink(tmpname)
+
 
 def test_video_reader_str():
 
@@ -124,6 +141,7 @@ def test_video_reader_str():
   iv = reader(INPUT_VIDEO)
   assert repr(iv)
   assert str(iv)
+
 
 def test_can_iterate():
 
@@ -140,6 +158,7 @@ def test_can_iterate():
 
   assert counter == len(video) #we have gone through all frames
 
+
 def test_iteration():
 
   from . import reader
@@ -150,21 +169,26 @@ def test_iteration():
   for l, i in zip(objs, f):
     assert numpy.allclose(l, i)
 
+
 def test_base_load_on_unicode():
 
-  # Writing temp file for testing
-  write_unicode_temp_file()
+  try:
 
-  from . import reader
-  f = reader(UNICODE_VIDEO)
-  objs = load(UNICODE_VIDEO)
+    # Writing temp file for testing
+    tmpname = write_unicode_temp_file()
 
-  nose.tools.eq_(len(f), len(objs))
-  for l, i in zip(objs, f):
-    assert numpy.allclose(l.shape, i.shape)
+    from . import reader
+    f = reader(tmpname)
+    objs = load(tmpname)
 
-  #os.remove(UNICODE_VIDEO)
-  
+    nose.tools.eq_(len(f), len(objs))
+    for l, i in zip(objs, f):
+      assert numpy.allclose(l.shape, i.shape)
+
+  finally:
+    if os.path.exists(tmpname): os.unlink(tmpname)
+
+
 def test_indexing():
 
   from . import reader
@@ -183,6 +207,7 @@ def test_indexing():
   assert numpy.allclose(f[len(f)-1], f[-1])
   assert numpy.allclose(f[len(f)-2], f[-2])
 
+
 def test_slicing_empty():
 
   from . import reader
@@ -192,6 +217,7 @@ def test_slicing_empty():
   assert objs.shape == tuple()
   assert objs.dtype == numpy.uint8
 
+
 def test_slicing_0():
 
   from . import reader
@@ -200,6 +226,7 @@ def test_slicing_0():
   objs = f[:]
   for i, k in enumerate(load(INPUT_VIDEO)):
     assert numpy.allclose(k, objs[i])
+
 
 def test_slicing_1():
 
@@ -213,6 +240,7 @@ def test_slicing_1():
   assert numpy.allclose(s[2], f[7])
   assert numpy.allclose(s[3], f[9])
 
+
 def test_slicing_2():
 
   from . import reader
@@ -223,6 +251,7 @@ def test_slicing_2():
   assert numpy.allclose(s[0], f[len(f)-10])
   assert numpy.allclose(s[1], f[len(f)-7])
   assert numpy.allclose(s[2], f[len(f)-4])
+
 
 def test_slicing_3():
 
@@ -237,6 +266,7 @@ def test_slicing_3():
   assert numpy.allclose(s[1], f[17])
   assert numpy.allclose(s[2], f[14])
   assert numpy.allclose(s[3], f[11])
+
 
 def test_slicing_4():
 
@@ -261,6 +291,7 @@ def test_can_use_array_interface():
 
   for frame_id, frame in zip(range(array.shape[0]), iv.__iter__()):
     assert numpy.array_equal(array[frame_id,:,:,:], frame)
+
 
 def test_video_reading_after_writing():
 
@@ -290,6 +321,7 @@ def test_video_reading_after_writing():
   finally:
     # And we erase both files after this
     if os.path.exists(tmpname): os.unlink(tmpname)
+
 
 def test_video_writer_close():
 
@@ -323,6 +355,7 @@ def test_video_writer_close():
   finally:
     # And we erase both files after this
     if os.path.exists(tmpname): os.unlink(tmpname)
+
 
 def test_closed_video_writer_raises():
 

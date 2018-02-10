@@ -1,12 +1,3 @@
-/**
- * @author Andre Anjos <andre.anjos@idiap.ch>
- * @date Mon 26 Nov 17:34:12 2012
- *
- * @brief A set of methods to grab information from ffmpeg.
- *
- * Copyright (C) 2011-2013 Idiap Research Institute, Martigny, Switzerland
- */
-
 #include <set>
 #include <boost/token_iterator.hpp>
 #include <boost/format.hpp>
@@ -14,47 +5,17 @@
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
-#if LIBAVUTIL_VERSION_INT >= 0x320f01 //50.15.1 @ ffmpeg-0.6
-#  include <libavutil/opt.h>
-#  include <libavutil/pixdesc.h>
-#endif
+#include <libavutil/opt.h>
+#include <libavutil/pixdesc.h>
 #include <libavutil/avstring.h>
 #include <libavutil/mathematics.h>
-#if LIBAVCODEC_VERSION_INT >= 0x391866 //57.24.102 @ ffmpeg-3.0
 #include <libavutil/imgutils.h>
-#endif
 }
 
 #include <bob.core/logging.h>
 #include <bob.core/assert.h>
 
 #include "utils.h"
-
-/**
- * Some code to account for older versions of ffmpeg
- */
-#if LIBAVCODEC_VERSION_INT < 0x363b64 //54.59.100 @ ffmpeg-1.0
-#  define AV_CODEC_ID_NONE CODEC_ID_NONE
-#  define AV_CODEC_ID_MPEG1VIDEO CODEC_ID_MPEG1VIDEO
-#  define AV_CODEC_ID_MPEG2VIDEO CODEC_ID_MPEG2VIDEO
-#  define AV_CODEC_ID_MJPEG CODEC_ID_MJPEG
-#endif
-
-#if LIBAVUTIL_VERSION_INT < 0x371167 //55.17.103 @ ffmpeg-3.0
-#ifndef AV_PKT_FLAG_KEY
-#define AV_PKT_FLAG_KEY PKT_FLAG_KEY
-#endif
-
-#ifndef AV_PIX_FMT_YUV420P
-#define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
-#endif
-#endif
-
-#if LIBAVCODEC_VERSION_INT < 0x347a00 //52.122.0 @ ffmpeg-0.7
-#define AVMEDIA_TYPE_VIDEO CODEC_TYPE_VIDEO
-#endif
-
-static bool FFMPEG_INITIALIZED = false;
 
 /**
  * Tries to find an encoder name through a decoder
@@ -87,25 +48,17 @@ static void check_codec_support(std::map<std::string, const AVCodec*>& retval) {
     //"msmpeg4v1", /* no encoding support */
     "msmpeg4v2", // the same as msmpeg4
     "ffv1", // buggy on ffmpeg >= 2.0
-#if LIBAVUTIL_VERSION_INT >= 0x320f01 //50.15.1 @ ffmpeg-0.6
     //"h263p", //bogus on libav-0.8.4
     "h264",
     //"h264_vdpau", //hw accelerated h264 decoding
     //"theora", //buggy on some platforms
     //"libtheora", //buggy on some platforms
+    "libopenh264",
     "libx264",
     "zlib",
-#endif
   };
 
   std::set<std::string> wishlist(tmp, tmp + (sizeof(tmp)/sizeof(tmp[0])));
-
-  if (!FFMPEG_INITIALIZED) {
-    /* Initialize libavcodec, and register all codecs and formats. */
-    av_log_set_level(AV_LOG_QUIET);
-    av_register_all();
-    FFMPEG_INITIALIZED = true;
-  }
 
   for (AVCodec* it = av_codec_next(0); it != 0; it = av_codec_next(it) ) {
     if (wishlist.find(it->name) == wishlist.end()) continue; ///< ignore this codec
@@ -140,13 +93,6 @@ static void check_iformat_support(std::map<std::string, AVInputFormat*>& retval)
 
   std::set<std::string> wishlist(tmp, tmp + (sizeof(tmp)/sizeof(tmp[0])));
 
-  if (!FFMPEG_INITIALIZED) {
-    /* initialize libavcodec, and register all codecs and formats. */
-    av_log_set_level(AV_LOG_QUIET);
-    av_register_all();
-    FFMPEG_INITIALIZED = true;
-  }
-
   for (AVInputFormat* it = av_iformat_next(0); it != 0; it = av_iformat_next(it) ) {
     std::vector<std::string> names;
     bob::io::video::tokenize_csv(it->name, names);
@@ -174,13 +120,6 @@ static void check_oformat_support(std::map<std::string, AVOutputFormat*>& retval
   };
 
   std::set<std::string> wishlist(tmp, tmp + (sizeof(tmp)/sizeof(tmp[0])));
-
-  if (!FFMPEG_INITIALIZED) {
-    /* initialize libavcodec, and register all codecs and formats. */
-    av_log_set_level(AV_LOG_QUIET);
-    av_register_all();
-    FFMPEG_INITIALIZED = true;
-  }
 
   for (AVOutputFormat* it = av_oformat_next(0); it != 0; it = av_oformat_next(it) ) {
     std::vector<std::string> names;
@@ -229,6 +168,7 @@ static void define_output_support_map(std::map<AVOutputFormat*, std::vector<cons
     retval[it->second].clear();
     std::string tmp[] = {
       "libx264",
+      "libopenh264",
       "h264",
       //"h264_vdpau",
       "mjpeg",
@@ -370,7 +310,6 @@ bool bob::io::video::oformat_supports_codec (const std::string& name,
 }
 
 static std::string ffmpeg_error(int num) {
-#if LIBAVUTIL_VERSION_INT >= 0x320f01 //50.15.1 @ ffmpeg-0.6
   static const int ERROR_SIZE = 1024;
   char message[ERROR_SIZE];
   int ok = av_strerror(num, message, ERROR_SIZE);
@@ -378,29 +317,16 @@ static std::string ffmpeg_error(int num) {
     throw std::runtime_error("bob::io::video::av_strerror() failed to report - maybe you have a memory issue?");
   }
   return std::string(message);
-#else
-  return std::string("unknown error - ffmpeg version < 0.6");
-#endif
 }
 
 static void deallocate_input_format_context(AVFormatContext* c) {
-# if LIBAVFORMAT_VERSION_INT < 0x351500 //53.21.0 @ ffmpeg-0.9 + libav-0.8.4
-
-  av_close_input_file(c);
-
-# else
-
   avformat_close_input(&c);
-
-# endif
 }
 
 boost::shared_ptr<AVFormatContext> bob::io::video::make_input_format_context(
     const std::string& filename) {
 
   AVFormatContext* retval = 0;
-
-# if LIBAVFORMAT_VERSION_INT >= 0x346e00 //52.110.0 @ ffmpeg-0.7
 
   int ok = avformat_open_input(&retval, filename.c_str(), 0, 0);
   if (ok != 0) {
@@ -409,24 +335,10 @@ boost::shared_ptr<AVFormatContext> bob::io::video::make_input_format_context(
     throw std::runtime_error(m.str());
   }
 
-# else
-
-  int ok = av_open_input_file(&retval, filename.c_str(), 0, 0, 0);
-  if (ok != 0) {
-    boost::format m("bob::io::video::av_open_input_file(filename=`%s') failed: ffmpeg reported %d == `%s'");
-    m % filename % ok % ffmpeg_error(ok);
-    throw std::runtime_error(m.str());
-  }
-
-# endif
-
   // creates and protects the return value
   boost::shared_ptr<AVFormatContext> shared_retval(retval, std::ptr_fun(deallocate_input_format_context));
 
   // retrieve stream information, throws if cannot find it
-
-# if LIBAVFORMAT_VERSION_INT >= 0x350400 //53.4.0 @ ffmpeg-0.8
-
   ok = avformat_find_stream_info(retval, 0);
 
   if (ok < 0) {
@@ -435,24 +347,10 @@ boost::shared_ptr<AVFormatContext> bob::io::video::make_input_format_context(
     throw std::runtime_error(m.str());
   }
 
-# else
-
-  ok = av_find_stream_info(retval);
-
-  if (ok < 0) {
-    boost::format m("bob::io::video::av_find_stream_info(filename=`%s') failed: ffmpeg reported %d == `%s'");
-    m % filename % ok % ffmpeg_error(ok);
-    throw std::runtime_error(m.str());
-  }
-
-# endif
-
   return shared_retval;
 }
 
 int bob::io::video::find_video_stream(const std::string& filename, boost::shared_ptr<AVFormatContext> format_context) {
-
-# if LIBAVFORMAT_VERSION_INT >= 0x346e00 //52.110.0 @ ffmpeg-0.7
 
   int retval = av_find_best_stream(format_context.get(), AVMEDIA_TYPE_VIDEO,
       -1, -1, 0, 0);
@@ -465,38 +363,16 @@ int bob::io::video::find_video_stream(const std::string& filename, boost::shared
 
   return retval;
 
-# else
-
-  // Look for the first video stream in the file
-  int retval = -1;
-
-  for (size_t i=0; i<format_context->nb_streams; ++i) {
-    if (format_context->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
-      retval = i;
-      break;
-    }
-  }
-
-  if(retval == -1) {
-    boost::format m("error opening video file `%s': cannot find any video streams on this file (looked at all %d streams by iterative search)");
-    m % filename % format_context->nb_streams;
-    throw std::runtime_error(m.str());
-  }
-
-  return retval;
-
-# endif
-
 }
 
 AVCodec* bob::io::video::find_decoder(const std::string& filename,
     boost::shared_ptr<AVFormatContext> format_context, int stream_index) {
 
-  AVCodec* retval = avcodec_find_decoder(format_context->streams[stream_index]->codec->codec_id);
+  AVCodec* retval = avcodec_find_decoder(format_context->streams[stream_index]->codecpar->codec_id);
 
   if (!retval) {
     boost::format m("bob::io::video::avcodec_find_decoder(0x%x) failed: cannot find a suitable codec to read stream %d of file `%s'");
-    m % format_context->streams[stream_index]->codec->codec_id
+    m % format_context->streams[stream_index]->codecpar->codec_id
       % stream_index % filename;
     throw std::runtime_error(m.str());
   }
@@ -504,85 +380,8 @@ AVCodec* bob::io::video::find_decoder(const std::string& filename,
   return retval;
 }
 
-#if !defined(HAVE_AVFORMAT_ALLOC_OUTPUT_CONTEXT2) || LIBAVFORMAT_VERSION_INT < 0x353c64 // 53.60.100 @ ffmpeg-0.10
-
-/**
- * This method was copied from ffmpeg-0.8 and is used in case it is not defined
- * on older versions of ffmpeg, for its convenience.
- */
-static int avformat_alloc_output_context2(AVFormatContext **avctx,
-    AVOutputFormat *oformat, const char *format, const char *filename) {
-
-  AVFormatContext *s = avformat_alloc_context();
-  int ret = 0;
-
-  *avctx = NULL;
-  if (!s)
-    goto nomem;
-
-  if (!oformat) {
-    if (format) {
-#if LIBAVFORMAT_VERSION_INT >= 0x344002 // 52.64.2 @ ffmpeg-0.6
-      oformat = av_guess_format(format, NULL, NULL);
-#else
-      oformat = guess_format(format, NULL, NULL);
-#endif
-      if (!oformat) {
-        av_log(s, AV_LOG_ERROR, "Requested output format '%s' is not a suitable output format\n", format);
-        ret = AVERROR(EINVAL);
-        goto error;
-      }
-    } else {
-#if LIBAVFORMAT_VERSION_INT >= 0x344002 // 52.64.2 @ ffmpeg-0.6
-      oformat = av_guess_format(NULL, filename, NULL);
-#else
-      oformat = guess_format(NULL, filename, NULL);
-#endif
-      if (!oformat) {
-        ret = AVERROR(EINVAL);
-        av_log(s, AV_LOG_ERROR, "Unable to find a suitable output format for '%s'\n",
-            filename);
-        goto error;
-      }
-    }
-  }
-
-  s->oformat = oformat;
-
-#if LIBAVFORMAT_VERSION_INT >= 0x344002 // 52.64.2 @ ffmpeg-0.6
-  if (s->oformat->priv_data_size > 0) {
-    s->priv_data = av_mallocz(s->oformat->priv_data_size);
-    if (!s->priv_data)
-      goto nomem;
-    if (s->oformat->priv_class) {
-      *(const AVClass**)s->priv_data= s->oformat->priv_class;
-      av_opt_set_defaults(s->priv_data);
-    }
-  } else
-    s->priv_data = NULL;
-#endif
-
-  if (filename)
-    av_strlcpy(s->filename, filename, sizeof(s->filename));
-  *avctx = s;
-  return 0;
-nomem:
-  av_log(s, AV_LOG_ERROR, "Out of memory\n");
-  ret = AVERROR(ENOMEM);
-error:
-#if LIBAVFORMAT_VERSION_INT >= 0x344002 // 52.64.2 @ ffmpeg-0.6
-  avformat_free_context(s);
-#else
-  av_free(s);
-#endif
-  return ret;
-
-}
-
-#endif
-
 static void deallocate_output_format_context(AVFormatContext* f) {
-  if (f) av_free(f);
+  if (f) avformat_free_context(f);
 }
 
 boost::shared_ptr<AVFormatContext> bob::io::video::make_output_format_context(
@@ -649,21 +448,13 @@ AVCodec* bob::io::video::find_encoder(const std::string& filename,
 }
 
 static void deallocate_stream(AVStream* s) {
-  if (s) {
-    av_freep(&s->codec); ///< free the codec context
-    av_freep(&s); ///< free the stream itself
-  }
+  //nop
 }
 
 boost::shared_ptr<AVStream> bob::io::video::make_stream(
     const std::string& filename,
     boost::shared_ptr<AVFormatContext> fmtctxt,
-    const std::string& codecname,
-    size_t height, size_t width,
-    float framerate, float bitrate, size_t gop,
     AVCodec* codec) {
-
-#if LIBAVFORMAT_VERSION_INT >= 0x351500 //53.21.0 @ ffmpeg-0.9
 
   AVStream* retval = avformat_new_stream(fmtctxt.get(), codec);
 
@@ -674,78 +465,8 @@ boost::shared_ptr<AVStream> bob::io::video::make_stream(
     throw std::runtime_error(m.str());
   }
 
-  /* Set user parameters */
-  avcodec_get_context_defaults3(retval->codec, codec);
-
-#else // region of code if FFMPEG_VERSION_INT < 0.9.0
-
-  AVStream* retval = av_new_stream(fmtctxt.get(), 0);
-
-  if (!retval) {
-    boost::format m("bob::io::video::av_new_stream(format=`%s' == `%s') failed: could not allocate video stream container for encoding video to file `%s'");
-    m % fmtctxt->oformat->name % fmtctxt->oformat->long_name % filename;
-    throw std::runtime_error(m.str());
-  }
-
-  /* Prepare the stream */
-  retval->codec->codec_type = codec->type;
-
-#endif // LIBAVFORMAT_VERSION_INT >= 53.42.0
-
   /* Some adjustments on the newly created stream */
   retval->id = fmtctxt->nb_streams-1; ///< this should be 0, normally
-
-  retval->codec->codec_id = codec->id;
-
-  /* Set user parameters */
-  retval->codec->bit_rate = bitrate;
-
-  /* Resolution must be a multiple of two. */
-  if (height%2 != 0 || height == 0 || width%2 != 0 || width == 0) {
-    boost::format m("ffmpeg only accepts video height and width if they are, both, multiples of two, but you supplied %d x %d while configuring video output for file `%s' - correct these and re-run");
-    m % height % width % filename;
-    deallocate_stream(retval);
-    throw std::runtime_error(m.str());
-  }
-
-  retval->codec->width    = width;
-  retval->codec->height   = height;
-
-  /* timebase: This is the fundamental unit of time (in seconds) in terms
-   * of which frame timestamps are represented. For fixed-fps content,
-   * timebase should be 1/framerate and timestamp increments should be
-   * identical to 1. */
-  retval->codec->time_base.den = framerate;
-  retval->codec->time_base.num = 1;
-  retval->codec->gop_size      = gop; /* emit one intra frame every X at most */
-  retval->codec->pix_fmt       = AV_PIX_FMT_YUV420P;
-  if (codec->pix_fmts && codec->pix_fmts[0] != -1) {
-    retval->codec->pix_fmt     = codec->pix_fmts[0];
-  }
-
-#if LIBAVCODEC_VERSION_INT >= 0x361764 //54.23.100 @ ffmpeg-0.11
-  if (retval->codec->codec_id == AV_CODEC_ID_MJPEG) {
-    /* set jpeg color range */
-    retval->codec->color_range = AVCOL_RANGE_JPEG;
-  }
-# endif
-
-  if (retval->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-    /* just for testing, we also add B frames */
-    retval->codec->max_b_frames = 2;
-  }
-
-  if (retval->codec->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
-    /* Needed to avoid using macroblocks in which some coeffs overflow.
-     * This does not happen with normal video, it just happens here as
-     * the motion of the chroma plane does not match the luma plane. */
-    retval->codec->mb_decision = 2;
-  }
-
-  /* Some formats want stream headers to be separate. */
-  if (fmtctxt->oformat->flags & AVFMT_GLOBALHEADER) {
-    retval->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
-  }
 
   return boost::shared_ptr<AVStream>(retval, std::ptr_fun(deallocate_stream));
 }
@@ -757,93 +478,29 @@ static void deallocate_frame(AVFrame* f) {
   }
 }
 
-#if LIBAVUTIL_VERSION_INT >= 0x334A64 //51.74.100 @ ffmpeg-1.0
 boost::shared_ptr<AVFrame>
 bob::io::video::make_frame(const std::string& filename,
-    boost::shared_ptr<AVCodecContext> codec, AVPixelFormat pixfmt) {
-#else
-boost::shared_ptr<AVFrame>
-bob::io::video::make_frame(const std::string& filename,
-    boost::shared_ptr<AVCodecContext> codec, PixelFormat pixfmt) {
-#endif
+    boost::shared_ptr<AVCodecContext> codec) {
 
   /* allocate and init a re-usable frame */
-#if LIBAVCODEC_VERSION_INT < 0x373466 //55.52.102 @ ffmpeg-2.2
-  AVFrame* retval = avcodec_alloc_frame();
-  if (!retval) {
-    boost::format m("bob::io::video::avcodec_alloc_frame() failed: cannot allocate frame to start encoding video file `%s'");
-    m % filename;
-    throw std::runtime_error(m.str());
-  }
-#else
   AVFrame* retval = av_frame_alloc();
   if (!retval) {
     boost::format m("bob::io::video::av_frame_alloc() failed: cannot allocate frame to start encoding video file `%s'");
     m % filename;
     throw std::runtime_error(m.str());
   }
-#endif
 
-#if LIBAVCODEC_VERSION_INT < 0x363b64 //54.59.100 @ ffmpeg-1.0
-
-  size_t size = avpicture_get_size(pixfmt, codec->width, codec->height);
-
-  uint8_t* picture_buf = (uint8_t*)av_malloc(size);
-
-  if (!picture_buf) {
-    av_free(retval);
-    boost::format m("bob::io::video::av_malloc(size=%d) failed: cannot picture buffer to start reading or writing video file `%s'");
-    m % size % filename;
-    throw std::runtime_error(m.str());
-  }
-
-  /**
-   * This method will distribute the allocated memory for "picture_buf" into
-   * the several frame "data" pointers. This will make sure that, for example,
-   * multi-plane formats have the necessary amount of space pre-set and
-   * indicated for each plane in each of the "data" placeholders (4 at total).
-   *
-   * For example, for the YUV420P format (1 byte per Y value and 0.5 byte per U
-   * and V values), it will make sure that the data allocated for picture_buf
-   * is split following the correct plane proportion 2:1:1 for each plane
-   * Y:U:V.
-   *
-   * For an RGB24 (packed RGB) format, it will make sure the linesize is set to
-   * 3 times the image width so it can pack the R, G and B bytes together in a
-   * single line.
-   */
-  avpicture_fill((AVPicture *)retval, picture_buf, pixfmt,
-      codec->width, codec->height);
-
-#else // >= 54.59.100 @ ffmpeg-1.0
-  retval->format = pixfmt;
+  retval->format = codec->pix_fmt;
   retval->width  = codec->width;
   retval->height = codec->height;
 
-#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
-  AVPicture picture;
-
-  int ok = avpicture_alloc(&picture, pixfmt, codec->width, codec->height);
-  if (ok < 0) {
-    av_free(retval);
-    boost::format m("bob::io::video::avpicture_alloc(picture, pixfmt, width=%d, height=%d) failed: cannot allocate frame/picture buffer start reading or writing video file `%s'");
-    m % codec->width % codec->height % filename;
-    throw std::runtime_error(m.str());
-  }
-
-  /* copy data and linesize picture pointers to frame */
-  *((AVPicture *)retval) = picture;
-#else
-  int ok = av_image_alloc(retval->data, retval->linesize, codec->width, codec->height, pixfmt, 1);
+  int ok = av_image_alloc(retval->data, retval->linesize, codec->width, codec->height, codec->pix_fmt, 1);
   if (ok < 0) {
     av_free(retval);
     boost::format m("bob::io::video::av_image_alloc(data, linesize, width=%d, height=%d, 1) failed: cannot allocate frame/picture buffer start reading or writing video file `%s'");
     m % codec->width % codec->height % filename;
     throw std::runtime_error(m.str());
   }
-#endif
-
-#endif
 
   return boost::shared_ptr<AVFrame>(retval, std::ptr_fun(deallocate_frame));
 }
@@ -855,21 +512,12 @@ static void deallocate_empty_frame(AVFrame* f) {
 boost::shared_ptr<AVFrame> bob::io::video::make_empty_frame(const std::string& filename) {
 
   /* allocate and init a re-usable frame */
-#if LIBAVCODEC_VERSION_INT < 0x373466 //55.52.102 @ ffmpeg-2.2
-  AVFrame* retval = avcodec_alloc_frame();
-  if (!retval) {
-    boost::format m("bob::io::video::avcodec_alloc_frame() failed: cannot allocate frame to start encoding video file `%s'");
-    m % filename;
-    throw std::runtime_error(m.str());
-  }
-#else
   AVFrame* retval = av_frame_alloc();
   if (!retval) {
     boost::format m("bob::io::video::av_frame_alloc() failed: cannot allocate frame to start encoding video file `%s'");
     m % filename;
     throw std::runtime_error(m.str());
   }
-#endif
 
   return boost::shared_ptr<AVFrame>(retval, std::ptr_fun(deallocate_empty_frame));
 }
@@ -878,15 +526,20 @@ static void deallocate_swscaler(SwsContext* s) {
   if (s) sws_freeContext(s);
 }
 
-#if LIBAVUTIL_VERSION_INT >= 0x334A64 //51.74.100 @ ffmpeg-1.0
 boost::shared_ptr<SwsContext> bob::io::video::make_scaler
 (const std::string& filename, boost::shared_ptr<AVCodecContext> ctxt,
  AVPixelFormat source_pixel_format, AVPixelFormat dest_pixel_format) {
-#else
-boost::shared_ptr<SwsContext> bob::io::video::make_scaler
-(const std::string& filename, boost::shared_ptr<AVCodecContext> ctxt,
- PixelFormat source_pixel_format, PixelFormat dest_pixel_format) {
-#endif
+
+  /* check pixel format before scaler gets allocated */
+  if (source_pixel_format == AV_PIX_FMT_NONE) {
+    boost::format m("bob::io::video::make_scaler() cannot be called with source_pixel_format == `AV_PIX_FMT_NONE'");
+    throw std::runtime_error(m.str());
+  }
+
+  if (dest_pixel_format == AV_PIX_FMT_NONE) {
+    boost::format m("bob::io::video::make_scaler() cannot be called with dest_pixel_format == `AV_PIX_FMT_NONE'");
+    throw std::runtime_error(m.str());
+  }
 
   /**
    * Initializes the software scaler (SWScale) so we can convert images to
@@ -902,54 +555,12 @@ boost::shared_ptr<SwsContext> bob::io::video::make_scaler
 
   if (!retval) {
     boost::format m("bob::io::video::sws_getContext(src_width=%d, src_height=%d, src_pix_format=`%s', dest_width=%d, dest_height=%d, dest_pix_format=`%s', flags=SWS_BICUBIC, 0, 0, 0) failed: cannot get software scaler context to start encoding or decoding video file `%s'");
-    m % ctxt->width % ctxt->height %
-#if LIBAVUTIL_VERSION_INT >= 0x320f01 //50.15.1 @ ffmpeg-0.6
-	av_get_pix_fmt_name(source_pixel_format)
-#else
-	avcodec_get_pix_fmt_name(source_pixel_format)
-#endif
-      % ctxt->width % ctxt->height %
-#if LIBAVUTIL_VERSION_INT >= 0x320f01 //50.15.1 @ ffmpeg-0.6
-	av_get_pix_fmt_name(dest_pixel_format)
-#else
-	avcodec_get_pix_fmt_name(dest_pixel_format)
-#endif
+    m % ctxt->width % ctxt->height % av_get_pix_fmt_name(source_pixel_format)
+      % ctxt->width % ctxt->height % av_get_pix_fmt_name(dest_pixel_format)
       % filename;
     throw std::runtime_error(m.str());
   }
   return boost::shared_ptr<SwsContext>(retval, std::ptr_fun(deallocate_swscaler));
-}
-
-static void deallocate_buffer(uint8_t* p) {
-  if (p) av_free(p);
-}
-
-boost::shared_array<uint8_t> bob::io::video::make_buffer
-(boost::shared_ptr<AVFormatContext> format_context, size_t size) {
-
-  uint8_t* retval=0;
-
-#if LIBAVFORMAT_VERSION_INT < 0x360664 // 54.6.100 @ ffmpeg-0.11
-
-  if (!(format_context->oformat->flags & AVFMT_RAWPICTURE)) {
-    /* allocate output buffer */
-    /* XXX: API change will be done */
-    /* buffers passed into lav* can be allocated any way you prefer,
-       as long as they're aligned enough for the architecture, and
-       they're freed appropriately (such as using av_free for buffers
-       allocated with av_malloc) */
-    retval = reinterpret_cast<uint8_t*>(av_malloc(size));
-
-    if (!retval) {
-      boost::format m("bob::io::video::av_malloc(%d) failed: could not allocate video output buffer for encoding");
-      m % size;
-      throw std::runtime_error(m.str());
-    }
-  }
-
-#endif
-
-  return boost::shared_array<uint8_t>(retval, std::ptr_fun(deallocate_buffer));
 }
 
 /**
@@ -967,22 +578,18 @@ static void image_to_context(const blitz::Array<uint8_t,3>& data,
     throw std::runtime_error("sws_scale() check failed: cannot encode blitz::Array<uint8_t,3> in video stream - ffmpeg/libav requires contiguous color planes");
   }
 
-  int width = stream->codec->width;
-  int height = stream->codec->height;
+  int width = stream->codecpar->width;
+  int height = stream->codecpar->height;
 
   const uint8_t* datap = data.data();
   int plane_size = width * height;
   const uint8_t* planes[] = {datap+plane_size, datap+2*plane_size, datap, 0};
   int linesize[] = {width, width, width, 0};
 
-#if LIBSWSCALE_VERSION_INT >= 0x000b00 /* 0.11.0 @ ffmpeg-0.6 */
   int ok = sws_scale(scaler.get(), planes, linesize, 0, height, output_frame->data, output_frame->linesize);
-#else
-  int ok = sws_scale(scaler.get(), const_cast<uint8_t**>(planes), linesize, 0, height, output_frame->data, output_frame->linesize);
-#endif
   if (ok < 0) {
-    boost::format m("bob::io::video::sws_scale() failed: could not scale frame while encoding - ffmpeg reports error %d");
-    m % ok;
+    boost::format m("bob::io::video::sws_scale() failed: could not scale frame while encoding - ffmpeg reports error %d = `%s'");
+    m % ok % ffmpeg_error(ok);
     throw std::runtime_error(m.str());
   }
 }
@@ -998,8 +605,8 @@ static void image_to_context(const blitz::Array<uint8_t,3>& data,
     boost::shared_ptr<AVFrame> output_frame,
     boost::shared_ptr<AVFrame> tmp_frame) {
 
-  int width = stream->codec->width;
-  int height = stream->codec->height;
+  int width = stream->codecpar->width;
+  int height = stream->codecpar->height;
 
   // replace data in the buffer frame by the pixmap to encode
   tmp_frame->linesize[0] = width*3;
@@ -1010,41 +617,111 @@ static void image_to_context(const blitz::Array<uint8_t,3>& data,
   int ok = sws_scale(scaler.get(), tmp_frame->data, tmp_frame->linesize,
 		  0, height, output_frame->data, output_frame->linesize);
   if (ok < 0) {
-    boost::format m("bob::io::video::sws_scale() failed: could not scale frame while encoding - ffmpeg reports error %d");
-    m % ok;
+    boost::format m("bob::io::video::sws_scale() failed: could not scale frame while encoding - ffmpeg reports error %d = `%s'");
+    m % ok % ffmpeg_error(ok);
     throw std::runtime_error(m.str());
   }
 }
 
 static void deallocate_codec_context(AVCodecContext* c) {
   int ok = avcodec_close(c);
+  avcodec_free_context(&c);
   if (ok < 0) {
-    bob::core::warn << "bob::io::video::avcodec_close() failed: cannot close codec context to stop reading or writing video file (ffmpeg error " << ok << ")" << std::endl;
+    boost::format m("bob::io::video::avcodec_close() failed: cannot close codec context (ffmpeg reports error %d = `%s')");
+    m % ok % ffmpeg_error(ok);
+    throw std::runtime_error(m.str());
   }
 }
 
-boost::shared_ptr<AVCodecContext> bob::io::video::make_codec_context(
+boost::shared_ptr<AVCodecContext> bob::io::video::make_decoder_context(
     const std::string& filename, AVStream* stream, AVCodec* codec) {
 
-  AVCodecContext* retval = stream->codec;
+  AVCodecContext* retval = avcodec_alloc_context3(codec);
 
-  // Hack to correct frame rates that seem to be generated by some codecs
-  if(retval->time_base.num > 1000 && retval->time_base.den == 1) {
-    retval->time_base.den = 1000;
-  }
-
-# if LIBAVCODEC_VERSION_INT < 0x347a00 //52.122.0 @ ffmpeg-0.7
-
-  int ok = avcodec_open(retval, codec);
+  /* copy the parameters from the demuxer to the codec context */
+  int ok = avcodec_parameters_to_context(retval, stream->codecpar);
   if (ok < 0) {
-    boost::format m("bob::io::video::avcodec_open(codec=`%s'(0x%x) == `%s') failed: cannot open codec context to start reading or writing video file `%s' - ffmpeg reports error %d == `%s'");
+    deallocate_codec_context(retval);
+    boost::format m("bob::io::video::avcodec_parameters_to_context(codec=`%s'(0x%x) == `%s') failed: cannot open codec context to start reading video file `%s' - ffmpeg reports error %d == `%s'");
     m % codec->name % codec->id % codec->long_name % filename
       % ok % ffmpeg_error(ok);
     throw std::runtime_error(m.str());
   }
 
-# else //fmpeg >= 0.7
+  // In the case we opened for writing, this should initialize the context
+  ok = avcodec_open2(retval, codec, 0);
+  if (ok < 0) {
+    boost::format m("bob::io::video::avcodec_open2(codec=`%s'(0x%x) == `%s') failed: cannot open codec context to start writing video file `%s' - ffmpeg reports error %d == `%s'");
+    m % codec->name % codec->id % codec->long_name % filename
+      % ok % ffmpeg_error(ok);
+    throw std::runtime_error(m.str());
+  }
 
+  return boost::shared_ptr<AVCodecContext>(retval,
+      std::ptr_fun(deallocate_codec_context));
+}
+
+boost::shared_ptr<AVCodecContext> bob::io::video::make_encoder_context(
+    const std::string& filename, AVFormatContext* fmtctxt, AVStream* stream,
+    AVCodec* codec, size_t height, size_t width, double framerate, double
+    bitrate, size_t gop) {
+
+  AVCodecContext* retval = avcodec_alloc_context3(codec);
+
+  /* Set user parameters */
+  retval->bit_rate = bitrate;
+
+  /* Resolution must be a multiple of two. */
+  if (height%2 != 0 || height == 0 || width%2 != 0 || width == 0) {
+    boost::format m("ffmpeg only accepts video height and width if they are, both, multiples of two, but you supplied %d x %d while configuring video output for file `%s' - correct these and re-run");
+    m % height % width % filename;
+    deallocate_codec_context(retval);
+    throw std::runtime_error(m.str());
+  }
+
+  retval->width    = width;
+  retval->height   = height;
+
+  /* timebase: This is the fundamental unit of time (in seconds) in terms
+   * of which frame timestamps are represented. For fixed-fps content,
+   * timebase should be 1/framerate and timestamp increments should be
+   * identical to 1. */
+  stream->time_base = av_make_q(1, framerate);
+  retval->time_base = stream->time_base;
+  retval->framerate = av_make_q(framerate, 1);
+
+  retval->gop_size      = gop; /* emit one intra frame every X at most */
+  retval->pix_fmt       = AV_PIX_FMT_YUV420P;
+
+  // checks if the wanted pixel format can be digested by codec
+  if (codec->pix_fmts && codec->pix_fmts[0] != AV_PIX_FMT_NONE) {
+    //override with preference for native formats supported by codec
+    retval->pix_fmt = codec->pix_fmts[0];
+  }
+
+  if (retval->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+    /* just for testing, we also add B frames */
+    retval->max_b_frames = 2;
+  }
+
+  if (retval->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
+    /* Needed to avoid using macroblocks in which some coeffs overflow.
+     * This does not happen with normal video, it just happens here as
+     * the motion of the chroma plane does not match the luma plane. */
+    retval->mb_decision = 2;
+  }
+
+  if (retval->codec_id == AV_CODEC_ID_MJPEG) {
+    /* set jpeg color range */
+    retval->color_range = AVCOL_RANGE_JPEG;
+  }
+
+  /* Some formats want stream headers to be separate. */
+  if (fmtctxt->oformat->flags & AVFMT_GLOBALHEADER) {
+    retval->flags |= CODEC_FLAG_GLOBAL_HEADER;
+  }
+
+  // In the case we opened for writing, this should initialize the context
   int ok = avcodec_open2(retval, codec, 0);
   if (ok < 0) {
     boost::format m("bob::io::video::avcodec_open2(codec=`%s'(0x%x) == `%s') failed: cannot open codec context to start reading or writing video file `%s' - ffmpeg reports error %d == `%s'");
@@ -1053,7 +730,15 @@ boost::shared_ptr<AVCodecContext> bob::io::video::make_codec_context(
     throw std::runtime_error(m.str());
   }
 
-# endif
+  /* copy the parameters from the codec context to the muxer */
+  ok = avcodec_parameters_from_context(stream->codecpar, retval);
+  if (ok < 0) {
+    deallocate_codec_context(retval);
+    boost::format m("bob::io::video::avcodec_parameters_from_context(codec=`%s'(0x%x) == `%s') failed: cannot open codec context to start reading or writing video file `%s' - ffmpeg reports error %d == `%s'");
+    m % codec->name % codec->id % codec->long_name % filename
+      % ok % ffmpeg_error(ok);
+    throw std::runtime_error(m.str());
+  }
 
   return boost::shared_ptr<AVCodecContext>(retval,
       std::ptr_fun(deallocate_codec_context));
@@ -1062,29 +747,9 @@ boost::shared_ptr<AVCodecContext> bob::io::video::make_codec_context(
 void bob::io::video::open_output_file(const std::string& filename,
     boost::shared_ptr<AVFormatContext> format_context) {
 
-# if LIBAVFORMAT_VERSION_INT < 0x346e00
-  // sets the output parameters (must be done even if no parameters).
-  int ok = av_set_parameters(format_context.get(), 0);
-  if (ok < 0) {
-    boost::format m("bob::io::video::av_set_parameters() failed while opening file `%s' for writing: ffmpeg returned error code %d: %s");
-    m % filename % ok % ffmpeg_error(ok);
-    throw std::runtime_error(m.str());
-  }
-  dump_format(format_context.get(), 0, filename.c_str(), 1);
-# else
-  av_dump_format(format_context.get(), 0, filename.c_str(), 1);
-# endif
-
   /* open the output file, if needed */
   if (!(format_context->oformat->flags & AVFMT_NOFILE)) {
-#   if LIBAVFORMAT_VERSION_INT >= 0x346e00 && LIBAVFORMAT_VERSION_INT < 0x350400
-    if (avio_open(&format_context->pb, filename.c_str(), URL_WRONLY) < 0)
-#   elif LIBAVFORMAT_VERSION_INT >= 0x350400
-    if (avio_open(&format_context->pb, filename.c_str(), AVIO_FLAG_WRITE) < 0)
-#   else
-    if (url_fopen(&format_context->pb, filename.c_str(), URL_WRONLY) < 0)
-#   endif
-    {
+    if (avio_open(&format_context->pb, filename.c_str(), AVIO_FLAG_WRITE) < 0) {
       boost::format m("bob::io::video::avio_open(filename=`%s', AVIO_FLAG_WRITE) failed: cannot open output file for writing");
       m % filename.c_str();
       throw std::runtime_error(m.str());
@@ -1092,11 +757,7 @@ void bob::io::video::open_output_file(const std::string& filename,
   }
 
   /* Write the stream header, if any. */
-# if LIBAVFORMAT_VERSION_INT >= 0x346e00 //52.110.0 @ ffmpeg-0.7
   int error = avformat_write_header(format_context.get(), 0);
-# else
-  int error = av_write_header(format_context.get());
-# endif
   if (error < 0) {
     boost::format m("bob::io::video::avformat_write_header(filename=`%s') failed: cannot write header to output file for some reason - ffmpeg reports error %d == `%s'");
     m % filename.c_str() % error % ffmpeg_error(error);
@@ -1119,16 +780,15 @@ void bob::io::video::close_output_file(const std::string& filename,
   }
 
   /* Closes the output file */
-# if LIBAVFORMAT_VERSION_INT >= 0x346e00 //52.110.0 @ ffmpeg-0.7
-  avio_close(format_context->pb);
-# else
-  url_fclose(format_context->pb);
-# endif
+  avio_closep(&format_context->pb);
 
 }
 
 static AVPacket* allocate_packet() {
-  AVPacket* retval = new AVPacket;
+  AVPacket* retval = av_packet_alloc();
+  if (!retval) {
+    boost::format m("bob::io::video::av_packet_alloc() failed to allocate a new packet");
+  }
   av_init_packet(retval);
   retval->data = 0;
   retval->size = 0;
@@ -1136,12 +796,7 @@ static AVPacket* allocate_packet() {
 }
 
 static void deallocate_packet(AVPacket* p) {
-#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
-  if (p->size || p->data) av_free_packet(p);
-#else
-  if (p->size || p->data) av_packet_unref(p);
-#endif
-  delete p;
+  av_packet_free(&p);
 }
 
 static boost::shared_ptr<AVPacket> make_packet() {
@@ -1149,103 +804,54 @@ static boost::shared_ptr<AVPacket> make_packet() {
       std::ptr_fun(deallocate_packet));
 }
 
+static void write_packet_to_stream(const std::string& filename,
+    boost::shared_ptr<AVFormatContext> format_context,
+    boost::shared_ptr<AVStream> stream,
+    boost::shared_ptr<AVCodecContext> codec_context,
+    boost::shared_ptr<AVPacket> pkt) {
+
+  //effectively writes the encoded packet to the stream
+  /* writes the compressed frame to the media file. */
+  pkt->stream_index = stream->index;
+  pkt->duration = av_rescale_q(1, codec_context->time_base,
+      stream->time_base);
+  int ok = av_interleaved_write_frame(format_context.get(), pkt.get());
+  if (ok && (ok != AVERROR(EINVAL))) {
+    boost::format m("bob::io::video::av_interleaved_write_frame() failed: failed to write video frame while encoding file `%s' - ffmpeg reports error %d == `%s'");
+    m % filename % ok % ffmpeg_error(ok);
+    throw std::runtime_error(m.str());
+  }
+
+}
+
 void bob::io::video::flush_encoder (const std::string& filename,
     boost::shared_ptr<AVFormatContext> format_context,
-    boost::shared_ptr<AVStream> stream, AVCodec* codec,
-    boost::shared_array<uint8_t> buffer,
-    size_t buffer_size) {
+    boost::shared_ptr<AVStream> stream,
+    boost::shared_ptr<AVCodecContext> codec_context) {
 
-  //We only need to flush codecs that have delayed data processing
-  if (!(codec->capabilities & CODEC_CAP_DELAY)) return;
+  if (format_context->oformat->flags & AVFMT_RAWPICTURE) return;
 
-  while (true) {
+  boost::shared_ptr<AVPacket> pkt = make_packet();
 
-// libavformat >= 54.6.100 && libavcodec >= 54.23.100 == ffmpeg-0.11
-#if LIBAVFORMAT_VERSION_INT >= 0x360664 && LIBAVCODEC_VERSION_INT >= 0x361764
+  int ok = avcodec_send_frame(codec_context.get(), 0); //flush
+  if (ok < 0) {
+    boost::format m("bob::io::video::avcodec_send_frame() failed: failed to encode video frame while flushing file `%s' - ffmpeg reports error %d == `%s'");
+    m % filename % ok % ffmpeg_error(ok);
+    throw std::runtime_error(m.str());
+  }
 
-    /* encode the image */
-    boost::shared_ptr<AVPacket> pkt = make_packet();
-
-    int got_output;
-    int ok = avcodec_encode_video2(stream->codec, pkt.get(), 0, &got_output);
-
-    if (ok < 0) {
-      boost::format m("bob::io::video::avcodec_encode_video2() failed: failed to encode video frame while writing to file `%s' -- ffmpeg reports error %d == `%s'");
+  while (ok >= 0) {
+    ok = avcodec_receive_packet(codec_context.get(), pkt.get());
+    if (ok < 0 && ok != AVERROR(EAGAIN) && ok != AVERROR_EOF) {
+      boost::format m("bob::io::video::avcodec_receive_packet() failed: failed to flush encoder while writing to file `%s' - ffmpeg reports error %d == `%s'");
       m % filename % ok % ffmpeg_error(ok);
       throw std::runtime_error(m.str());
     }
-
-    /* If size is zero, it means the image was buffered. */
-    else if (got_output) {
-#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
-      if (stream->codec->coded_frame->key_frame) pkt->flags |= AV_PKT_FLAG_KEY;
-#endif
-      pkt->stream_index = stream->index;
-
-      /* Write the compressed frame to the media file. */
-      ok = av_interleaved_write_frame(format_context.get(), pkt.get());
-      if (ok && (ok != AVERROR(EINVAL))) {
-        boost::format m("bob::io::video::av_interleaved_write_frame() failed: failed to encode video frame while flushing remaining frames to file `%s' -- ffmpeg reports error %d == `%s'");
-        m % filename % ok % ffmpeg_error(ok);
-        throw std::runtime_error(m.str());
-      }
+    if (ok >= 0 && pkt->size != 0) { //write last packet to the stream
+      write_packet_to_stream(filename, format_context, stream, codec_context,
+          pkt);
     }
-
-    /* encoded the video, but no pkt got back => video is flushed */
-    else if (ok == 0) break;
-
-#else // == #if FFmpeg version < 0.11.0 or using libav
-
-    /**
-     * The main difference in this way of encoding is what we are responsible
-     * for allocating ourselves the buffer in which the encoding will occur. If
-     * that space is too small, encoding the data will result in an error.
-     */
-
-    /* encode the image */
-    int out_size = avcodec_encode_video(stream->codec,
-        buffer.get(), buffer_size, 0);
-
-    if (out_size < 0) {
-      boost::format m("bob::io::video::avcodec_encode_video() failed: failed to encode video frame while writing to file `%s' -- ffmpeg reports error %d == `%s'");
-      m % filename % out_size % ffmpeg_error(out_size);
-      throw std::runtime_error(m.str());
-    }
-
-    /* If size is zero, it means the image was buffered. */
-    else if (out_size > 0) {
-
-      /* encode the image */
-      AVPacket pkt;
-      av_init_packet(&pkt);
-
-#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
-      if ((size_t)stream->codec->coded_frame->pts != AV_NOPTS_VALUE)
-        pkt.pts = av_rescale_q(stream->codec->coded_frame->pts,
-            stream->codec->time_base, stream->time_base);
-      if (stream->codec->coded_frame->key_frame)
-        pkt.flags |= AV_PKT_FLAG_KEY;
-#endif
-
-      pkt.stream_index = stream->index;
-      pkt.data         = buffer.get();
-      pkt.size         = out_size;
-
-      /* Write the compressed frame to the media file. */
-      int ok = av_interleaved_write_frame(format_context.get(), &pkt);
-      if (ok && (ok != AVERROR(EINVAL))) {
-        boost::format m("bob::io::video::av_interleaved_write_frame() failed: failed to write video frame while encoding file `%s' - ffmpeg reports error %d == `%s'");
-        m % filename % ok % ffmpeg_error(ok);
-        throw std::runtime_error(m.str());
-      }
-
-    }
-
-    /* encoded the video, but no pkt got back => video is flushed */
-    else break;
-
-#endif // FFmpeg version >= 0.11.0
-
+    av_packet_unref(pkt.get());
   }
 
 }
@@ -1254,137 +860,153 @@ void bob::io::video::write_video_frame (const blitz::Array<uint8_t,3>& data,
     const std::string& filename,
     boost::shared_ptr<AVFormatContext> format_context,
     boost::shared_ptr<AVStream> stream,
+    boost::shared_ptr<AVCodecContext> codec_context,
     boost::shared_ptr<AVFrame> context_frame,
     boost::shared_ptr<AVFrame> tmp_frame,
-    boost::shared_ptr<SwsContext> swscaler,
-    boost::shared_array<uint8_t> buffer,
-    size_t buffer_size) {
+    boost::shared_ptr<SwsContext> swscaler) {
 
   if (tmp_frame)
     image_to_context(data, stream, swscaler, context_frame, tmp_frame);
   else
     image_to_context(data, stream, swscaler, context_frame);
 
+  boost::shared_ptr<AVPacket> pkt = make_packet();
+
   if (format_context->oformat->flags & AVFMT_RAWPICTURE) {
-
     /* Raw video case - directly store the picture in the packet */
-    AVPacket pkt;
-    av_init_packet(&pkt);
-
-    pkt.flags        |= AV_PKT_FLAG_KEY;
-    pkt.stream_index  = stream->index;
-    pkt.data          = context_frame->data[0];
-    pkt.size          = sizeof(AVPicture);
-
-    int ok = av_interleaved_write_frame(format_context.get(), &pkt);
-    if (ok && (ok != AVERROR(EINVAL))) {
-      boost::format m("bob::io::video::av_interleaved_write_frame() failed: failed to write video frame while encoding file `%s' - ffmpeg reports error %d == `%s'");
-      m % filename % ok % ffmpeg_error(ok);
-      throw std::runtime_error(m.str());
-    }
-
+    pkt->flags        |= AV_PKT_FLAG_KEY;
+    pkt->data          = context_frame->data[0];
+    pkt->size          = sizeof(AVPicture);
+    write_packet_to_stream(filename, format_context, stream, codec_context,
+        pkt);
   }
-
-// libavformat >= 54.6.100 && libavcodec >= 54.23.100 == ffmpeg-0.11
-#if LIBAVFORMAT_VERSION_INT >= 0x360664 && LIBAVCODEC_VERSION_INT >= 0x361764
 
   else {
 
-    /* encode the image */
-    boost::shared_ptr<AVPacket> pkt = make_packet();
-
-    int got_output;
-    int ok = avcodec_encode_video2(stream->codec, pkt.get(), context_frame.get(), &got_output);
+    int ok = avcodec_send_frame(codec_context.get(), context_frame.get());
     if (ok < 0) {
-      boost::format m("bob::io::video::avcodec_encode_video2() failed: failed to encode video frame while writing to file `%s' - ffmpeg reports error %d == `%s'");
+      boost::format m("bob::io::video::avcodec_send_frame() failed: failed to encode video frame while writing to file `%s' - ffmpeg reports error %d == `%s'");
       m % filename % ok % ffmpeg_error(ok);
       throw std::runtime_error(m.str());
     }
 
-    /* If size is zero, it means the image was buffered. */
-    if (!ok && got_output && pkt->size) {
-
-#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
-      if (stream->codec->coded_frame && stream->codec->coded_frame->key_frame)
-        pkt->flags |= AV_PKT_FLAG_KEY;
-#endif
-
-      pkt->stream_index = stream->index;
-
-      /* Write the compressed frame to the media file. */
-      ok = av_interleaved_write_frame(format_context.get(), pkt.get());
-      if (ok != 0) {
-        boost::format m("bob::io::video::av_interleaved_write_frame() failed: failed to write video frame while encoding file `%s' - ffmpeg reports error %d == `%s'");
+    while (ok >= 0) {
+      ok = avcodec_receive_packet(codec_context.get(), pkt.get());
+      if (ok == AVERROR(EAGAIN)) { //ready for new frame
+        break;
+      }
+      else if (ok == AVERROR_EOF) {
+        boost::format m("bob::io::video::avcodec_receive_packet() failed: failed to encode video frame while writing to file `%s' - ffmpeg reports error %d == `%s' (file is already closed)");
         m % filename % ok % ffmpeg_error(ok);
         throw std::runtime_error(m.str());
       }
-
+      else if (ok < 0) { //real error condition
+        boost::format m("bob::io::video::avcodec_receive_packet() failed: failed to encode video frame while writing to file `%s' - ffmpeg reports error %d == `%s'");
+        m % filename % ok % ffmpeg_error(ok);
+        throw std::runtime_error(m.str());
+      }
+      else if (pkt->size > 0) { //write last packet to the stream
+        write_packet_to_stream(filename, format_context, stream, codec_context,
+            pkt);
+      }
+      av_packet_unref(pkt.get());
     }
-
-    context_frame->pts += av_rescale_q(1, stream->codec->time_base,
-        stream->time_base);
 
   }
 
-#else // == #if FFmpeg version < 0.11.0 or using libav
+  //sets the output frame PTS [Note: presentation timestamp in time_base
+  //units (time when frame should be shown to user) If AV_NOPTS_VALUE then
+  //frame_rate = 1/time_base will be assumed].
+  context_frame->pts += av_rescale_q(1, codec_context->time_base,
+      stream->time_base);
 
-  /**
-   * The main difference in this way of encoding is what we are responsible
-   * for allocating ourselves the buffer in which the encoding will occur. If
-   * that space is too small, encoding the data will result in an error.
-   */
+}
 
-  else {
-    /* encode the image */
-    int out_size = avcodec_encode_video(stream->codec,
-        buffer.get(), buffer_size, context_frame.get());
+/*
+bool bob::io::video::read_video_frame (const std::string& filename,
+    int current_frame, int stream_index,
+    boost::shared_ptr<AVFormatContext> format_context,
+    boost::shared_ptr<AVCodecContext> codec_context,
+    boost::shared_ptr<SwsContext> swscaler,
+    boost::shared_ptr<AVFrame> context_frame, uint8_t* data,
+    bool throw_on_error, bool skip) {
 
-    if (out_size < 0) {
-      boost::format m("bob::io::video::avcodec_encode_video() failed: failed to encode video frame while writing to file `%s' -- ffmpeg reports error %d == `%s'");
-      m % filename % out_size % ffmpeg_error(out_size);
+  boost::shared_ptr<AVPacket> pkt = make_packet();
+
+  //reads packet from file stream
+  int ok = av_read_frame(format_context.get(), pkt.get());
+  if (ok < 0) {
+    if (throw_on_error) {
+      boost::format m("bob::io::video::av_read_frame() failed: on file `%s' - ffmpeg reports error %d == `%s'");
+      m % filename % ok % ffmpeg_error(ok);
       throw std::runtime_error(m.str());
     }
-
-    /* If size is zero, it means the image was buffered. */
-    if (out_size > 0) {
-
-      /* encode the image */
-      AVPacket pkt;
-      av_init_packet(&pkt);
-
-#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
-      if ((size_t)stream->codec->coded_frame->pts != AV_NOPTS_VALUE)
-        pkt.pts = av_rescale_q(stream->codec->coded_frame->pts,
-            stream->codec->time_base, stream->time_base);
-      if (stream->codec->coded_frame->key_frame)
-        pkt.flags |= AV_PKT_FLAG_KEY;
-#endif
-
-      pkt.stream_index = stream->index;
-      pkt.data         = buffer.get();
-      pkt.size         = out_size;
-
-      /* Write the compressed frame to the media file. */
-      int ok = av_interleaved_write_frame(format_context.get(), &pkt);
-#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
-      av_free_packet(&pkt);
-#else
-      av_packet_unref(&pkt);
-#endif
-      if (ok && (ok != AVERROR(EINVAL))) {
-        boost::format m("bob::io::video::av_interleaved_write_frame() failed: failed to write video frame while encoding file `%s' - ffmpeg reports error %d == `%s'");
-        m % filename % ok % ffmpeg_error(ok);
-        throw std::runtime_error(m.str());
-      }
-
-    }
-
-    context_frame->pts += 1;
-
+    else return false;
   }
 
-#endif // FFmpeg version >= 0.11.0
+  //sends packet to decoder
+  ok = avcodec_send_packet(codec_context.get(), pkt.get());
+  if (ok < 0) {
+    if (throw_on_error) {
+      boost::format m("bob::io::video::avcodec_send_packet() failed: on file `%s' - ffmpeg reports error %d == `%s'");
+      m % filename % ok % ffmpeg_error(ok);
+      throw std::runtime_error(m.str());
+    }
+    else return false;
+  }
+
+  ok = avcodec_receive_frame(codec_context.get(), context_frame.get());
+
+  if (ok == AVERROR(EAGAIN)) {
+    //output is not available right now, maybe requires more packets?
+    boost::format m("bob::io::video::avcodec_receive_frame() failed: on file `%s' - ffmpeg reports error %d == `%s' (need more data!)");
+    m % filename % ok % ffmpeg_error(ok);
+    throw std::runtime_error(m.str());
+  }
+
+  if (ok == AVERROR_EOF) {
+    if (throw_on_error) {
+      boost::format m("bob::io::video::avcodec_receive_frame() failed: on file `%s' - ffmpeg reports error %d == `%s' (trying to read past end-of-file)");
+      m % filename % ok % ffmpeg_error(ok);
+      throw std::runtime_error(m.str());
+    }
+    return false;
+  }
+
+  if (ok < 0) { //get out, there is a real error condition going on...
+    if (throw_on_error) {
+      boost::format m("bob::io::video::avcodec_receive_frame() failed: on file `%s' - ffmpeg reports error %d == `%s'");
+      m % filename % ok % ffmpeg_error(ok);
+      throw std::runtime_error(m.str());
+    }
+    return false;
+  }
+
+  //at this point, we skip the decoding if we're skipping the current frame
+  if (skip) return true;
+
+  // In this case, we call the software scaler to decode the frame data.
+  // Normally, this means converting from planar YUV420 into packed RGB.
+
+  uint8_t* planes[] = {data, 0};
+  int linesize[] = {3*codec_context->width, 0};
+
+  int conv_height = sws_scale(swscaler.get(), context_frame->data,
+      context_frame->linesize, 0, codec_context->height, planes, linesize);
+
+  if (conv_height < 0) {
+    if (throw_on_error) {
+      boost::format m("bob::io::video::sws_scale() failed: could not scale frame %d of file `%s' - ffmpeg reports error %d");
+      m % current_frame % filename % conv_height;
+      throw std::runtime_error(m.str());
+    }
+    return false;
+  }
+
+  return true;
+
 }
+*/
 
 static int decode_frame (const std::string& filename, int current_frame,
     boost::shared_ptr<AVCodecContext> codec_context,
@@ -1402,17 +1024,8 @@ static int decode_frame (const std::string& filename, int current_frame,
   // It is **not** an error that ok is >= 0 and got_frame == 0. This, in fact,
   // happens often with recent versions of ffmpeg.
 
-#if LIBAVCODEC_VERSION_INT >= 0x344802 //52.72.2 @ ffmpeg-0.6
-
   int ok = avcodec_decode_video2(codec_context.get(), context_frame.get(),
       &got_frame, pkt.get());
-
-#else
-
-  int ok = avcodec_decode_video(codec_context.get(), context_frame.get(), &got_frame, pkt->data, pkt->size);
-
-#endif
-
   if (ok < 0 && throw_on_error) {
     boost::format m("bob::io::video::avcodec_decode_video/2() failed: could not decode frame %d of file `%s' - ffmpeg reports error %d == `%s'");
     m % current_frame % filename % ok % ffmpeg_error(ok);
@@ -1465,15 +1078,10 @@ bool bob::io::video::read_video_frame (const std::string& filename,
           swscaler, context_frame, data, pkt, got_frame,
           throw_on_error);
     }
-#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
-    av_free_packet(pkt.get());
-#else
     av_packet_unref(pkt.get());
-#endif
     if (got_frame) return true; //break loop
   }
 
-#if LIBAVCODEC_VERSION_INT >= 0x344802 //52.72.2 @ ffmpeg-0.6
   if (ok < 0 && ok != (int)AVERROR_EOF) {
     if (throw_on_error) {
       boost::format m("bob::io::video::av_read_frame() failed: on file `%s' - ffmpeg reports error %d == `%s'");
@@ -1482,7 +1090,6 @@ bool bob::io::video::read_video_frame (const std::string& filename,
     }
     else return false;
   }
-#endif
 
   // it is the end of the file
   pkt->data = NULL;
@@ -1526,17 +1133,8 @@ static int dummy_decode_frame (const std::string& filename, int current_frame,
   // It is **not** an error that ok is >= 0 and got_frame == 0. This, in fact,
   // happens often with recent versions of ffmpeg.
 
-#if LIBAVCODEC_VERSION_INT >= 0x344802 //52.72.2 @ ffmpeg-0.6
-
   int ok = avcodec_decode_video2(codec_context.get(), context_frame.get(),
       &got_frame, pkt.get());
-
-#else
-
-  int ok = avcodec_decode_video(codec_context.get(), context_frame.get(), &got_frame, pkt->data, pkt->size);
-
-#endif
-
   if (ok < 0 && throw_on_error) {
     boost::format m("bob::io::video::avcodec_decode_video/2() failed: could not skip frame %d of file `%s' - ffmpeg reports error %d == `%s'");
     m % current_frame % filename % ok % ffmpeg_error(ok);
@@ -1563,15 +1161,10 @@ bool bob::io::video::skip_video_frame (const std::string& filename,
       dummy_decode_frame(filename, current_frame, codec_context,
           context_frame, pkt, got_frame, throw_on_error);
     }
-#if LIBAVCODEC_VERSION_INT < 0x391866 //57.24.102 @ ffmpeg-3.0
-    av_free_packet(pkt.get());
-#else
     av_packet_unref(pkt.get());
-#endif
     if (got_frame) return true; //break loop
   }
 
-#if LIBAVCODEC_VERSION_INT >= 0x344802 //52.72.2 @ ffmpeg-0.6
   if (ok < 0 && ok != (int)AVERROR_EOF) {
     if (throw_on_error) {
       boost::format m("bob::io::video::av_read_frame() failed: on file `%s' - ffmpeg reports error %d == `%s'");
@@ -1580,7 +1173,6 @@ bool bob::io::video::skip_video_frame (const std::string& filename,
     }
     else return false;
   }
-#endif
 
   // it is the end of the file
   pkt->data = NULL;

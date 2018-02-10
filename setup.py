@@ -22,29 +22,14 @@ target_dir = os.path.join(package_dir, 'bob', 'io', 'video')
 
 packages = [
   'boost',
-  'libavformat >= 52.31.0',
-  'libavcodec >= 52.20.0',
-  'libavutil >= 49.15.0',
-  'libswscale >= 0.7.1'
+  # we require ffmpeg 3.1 and above
+  'libavformat >= 57.41.100',
+  'libavcodec >= 57.48.101',
+  'libavutil >= 55.28.100',
+  'libswscale >= 4.1.100'
   ]
 
 define_macros = [('__STDC_CONSTANT_MACROS', None)]
-
-# Checks if we have avformat_alloc_output_context2 defined in libavformat
-libavformat_pkg = pkgconfig('libavformat >= 52.31.0')
-import ctypes
-lib = find_library(
-    name=libavformat_pkg.libraries()[0],
-    version=libavformat_pkg.version,
-    prefixes=libavformat_pkg.library_directories()
-    )
-if lib:
-  try:
-    dll = ctypes.CDLL(lib[0])
-    if hasattr(dll, 'avformat_alloc_output_context2'):
-      define_macros.append(('HAVE_AVFORMAT_ALLOC_OUTPUT_CONTEXT2', None))
-  except OSError:
-    pass #ignore it
 
 setup(
 

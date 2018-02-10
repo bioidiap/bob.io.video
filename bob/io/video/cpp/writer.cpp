@@ -1,30 +1,7 @@
-/**
- * @file io/cxx/video::Writer.cc
- * @date Wed 28 Nov 2012 13:51:58 CET
- * @author Andre Anjos <andre.anjos@idiap.ch>
- *
- * @brief A class to help you write videos. This code originates from
- * http://ffmpeg.org/doxygen/1.0/, "muxing.c" example.
- *
- * Copyright (C) Idiap Research Institute, Martigny, Switzerland
- */
-
 #include "writer.h"
 
 #include <boost/format.hpp>
 #include <boost/preprocessor.hpp>
-
-#if LIBAVFORMAT_VERSION_INT < 0x361764 /* 54.23.100 @ ffmpeg-0.11 */
-#define FFMPEG_VIDEO_BUFFER_SIZE 200000
-#else
-#define FFMPEG_VIDEO_BUFFER_SIZE 0
-#endif
-
-#if LIBAVUTIL_VERSION_INT < 0x371167 //55.17.103 @ ffmpeg-3.0
-#ifndef AV_PIX_FMT_RGB24
-#define AV_PIX_FMT_RGB24 PIX_FMT_RGB24
-#endif
-#endif
 
 namespace bob { namespace io { namespace video {
 
@@ -42,17 +19,12 @@ namespace bob { namespace io { namespace video {
     m_opened(false),
     m_format_context(make_output_format_context(filename, format)),
     m_codec(find_encoder(filename, m_format_context, codec)),
-    m_stream(make_stream(filename, m_format_context, codec, height,
-          width, framerate, bitrate, gop, m_codec)),
-    m_codec_context(make_codec_context(filename, m_stream.get(), m_codec)),
-    m_context_frame(make_frame(filename, m_codec_context, m_stream->codec->pix_fmt)),
-#if LIBAVCODEC_VERSION_INT >= 0x352a00 //53.42.0 @ ffmpeg-0.9
-    m_swscaler(make_scaler(filename, m_codec_context, AV_PIX_FMT_GBRP, m_stream->codec->pix_fmt)),
-#else
-    m_rgb24_frame(make_frame(filename, m_codec_context, AV_PIX_FMT_RGB24)),
-    m_swscaler(make_scaler(filename, m_codec_context, AV_PIX_FMT_RGB24, m_stream->codec->pix_fmt)),
-#endif
-    m_buffer(make_buffer(m_format_context, FFMPEG_VIDEO_BUFFER_SIZE)),
+    m_stream(make_stream(filename, m_format_context, m_codec)),
+    m_codec_context(make_encoder_context(filename, m_format_context.get(),
+          m_stream.get(), m_codec, height, width, framerate, bitrate, gop)),
+    m_context_frame(make_frame(filename, m_codec_context)),
+    m_swscaler(make_scaler(filename, m_codec_context, AV_PIX_FMT_GBRP,
+          m_codec_context->pix_fmt)),
     m_height(height),
     m_width(width),
     m_framerate(framerate),
@@ -110,15 +82,13 @@ namespace bob { namespace io { namespace video {
 
     if (!m_opened) return;
 
-    flush_encoder(m_filename, m_format_context, m_stream, m_codec,
-        m_buffer, FFMPEG_VIDEO_BUFFER_SIZE);
+    flush_encoder(m_filename, m_format_context, m_stream, m_codec_context);
     close_output_file(m_filename, m_format_context);
 
     /* Destroyes resources in an orderly fashion */
     m_codec_context.reset();
     m_context_frame.reset();
     m_rgb24_frame.reset();
-    m_buffer.reset();
     m_swscaler.reset();
     m_stream.reset();
     m_format_context.reset();
@@ -139,8 +109,8 @@ namespace bob { namespace io { namespace video {
     info % BOOST_PP_STRINGIZE(LIBSWSCALE_VERSION);
     info % m_format_context->oformat->name;
     info % m_format_context->oformat->long_name;
-    info % m_stream->codec->codec->name;
-    info % m_stream->codec->codec->long_name;
+    info % m_codec->name;
+    info % m_codec->long_name;
     info % (m_current_frame/m_framerate);
     info % m_current_frame;
     info % m_framerate;
@@ -168,8 +138,8 @@ namespace bob { namespace io { namespace video {
     blitz::Range a = blitz::Range::all();
     for(int i=data.lbound(0); i<(data.extent(0)+data.lbound(0)); ++i) {
       write_video_frame(data(i, a, a, a), m_filename, m_format_context,
-          m_stream, m_context_frame, m_rgb24_frame, m_swscaler, m_buffer,
-          FFMPEG_VIDEO_BUFFER_SIZE);
+          m_stream, m_codec_context, m_context_frame, m_rgb24_frame,
+          m_swscaler);
       ++m_current_frame;
       m_typeinfo_video.shape[0] += 1;
     }
@@ -192,8 +162,7 @@ namespace bob { namespace io { namespace video {
     }
 
     write_video_frame(data, m_filename, m_format_context,
-        m_stream, m_context_frame, m_rgb24_frame, m_swscaler, m_buffer,
-        FFMPEG_VIDEO_BUFFER_SIZE);
+        m_stream, m_codec_context, m_context_frame, m_rgb24_frame, m_swscaler);
     ++m_current_frame;
     m_typeinfo_video.shape[0] += 1;
   }
@@ -229,8 +198,8 @@ namespace bob { namespace io { namespace video {
       blitz::Array<uint8_t,3> tmp(const_cast<uint8_t*>(static_cast<const uint8_t*>(data.ptr())), shape,
           blitz::neverDeleteData);
       write_video_frame(tmp, m_filename, m_format_context,
-          m_stream, m_context_frame, m_rgb24_frame, m_swscaler, m_buffer,
-          FFMPEG_VIDEO_BUFFER_SIZE);
+          m_stream, m_codec_context, m_context_frame, m_rgb24_frame,
+          m_swscaler);
       ++m_current_frame;
       m_typeinfo_video.shape[0] += 1;
     }
@@ -253,8 +222,8 @@ namespace bob { namespace io { namespace video {
       for(size_t i=0; i<type.shape[0]; ++i) {
         blitz::Array<uint8_t,3> tmp(ptr, shape, blitz::neverDeleteData);
         write_video_frame(tmp, m_filename, m_format_context,
-            m_stream, m_context_frame, m_rgb24_frame, m_swscaler, m_buffer,
-            FFMPEG_VIDEO_BUFFER_SIZE);
+            m_stream, m_codec_context, m_context_frame, m_rgb24_frame,
+            m_swscaler);
         ++m_current_frame;
         m_typeinfo_video.shape[0] += 1;
         ptr += frame_size;

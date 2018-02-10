@@ -1,12 +1,3 @@
-/**
- * @author Andre Anjos <andre.anjos@idiap.ch>
- * @date Mon 26 Nov 17:33:19 2012
- *
- * @brief A simple set of utilities to query ffmpeg
- *
- * Copyright (C) Idiap Research Institute, Martigny, Switzerland
- */
-
 #ifndef BOB_IO_VIDEO_UTILS_H
 #define BOB_IO_VIDEO_UTILS_H
 
@@ -101,15 +92,28 @@ namespace bob { namespace io { namespace video {
    ************************************************************************/
 
   /**
-   * Creates a new codec context and verify all is good.
+   * Creates a new codec encoding context and verify all is good.
+   *
+   * @note The returned object knows how to correctly delete itself, freeing
+   * all acquired resources. Nonetheless, when this object is used in
+   * conjunction with other objects required for file decoding, order must be
+   * respected.
+   */
+  boost::shared_ptr<AVCodecContext> make_decoder_context(
+      const std::string& filename, AVStream* stream, AVCodec* codec);
+
+  /**
+   * Creates a new codec encoding context and verify all is good.
    *
    * @note The returned object knows how to correctly delete itself, freeing
    * all acquired resources. Nonetheless, when this object is used in
    * conjunction with other objects required for file encoding, order must be
    * respected.
    */
-  boost::shared_ptr<AVCodecContext> make_codec_context(
-      const std::string& filename, AVStream* stream, AVCodec* codec);
+  boost::shared_ptr<AVCodecContext> make_encoder_context(
+      const std::string& filename, AVFormatContext* fmtctxt, AVStream* stream,
+      AVCodec* codec, size_t height, size_t width, double framerate,
+      double bitrate, size_t gop);
 
   /**
    * Allocates the software scaler that handles size and pixel format
@@ -119,16 +123,14 @@ namespace bob { namespace io { namespace video {
    * all acquired resources. Nonetheless, when this object is used in
    * conjunction with other objects required for file encoding, order must be
    * respected.
+   *
+   * @note This scaler constructor is used both in encoding and decoding,
+   * therefore needs to know source and destination pixel formats, which may
+   * different in each circumstance.
    */
-#if LIBAVUTIL_VERSION_INT >= 0x334A64 //51.74.100 @ ffmpeg-3.0
   boost::shared_ptr<SwsContext> make_scaler(const std::string& filename,
       boost::shared_ptr<AVCodecContext> stream,
       AVPixelFormat source_pixel_format, AVPixelFormat dest_pixel_format);
-#else
-  boost::shared_ptr<SwsContext> make_scaler(const std::string& filename,
-      boost::shared_ptr<AVCodecContext> stream,
-      PixelFormat source_pixel_format, PixelFormat dest_pixel_format);
-#endif
 
   /**
    * Allocates a frame for a particular context. The frame space will be
@@ -140,13 +142,8 @@ namespace bob { namespace io { namespace video {
    * conjunction with other objects required for file encoding, order must be
    * respected.
    */
-#if LIBAVUTIL_VERSION_INT >= 0x334A64 //51.74.100 @ ffmpeg-3.0
   boost::shared_ptr<AVFrame> make_frame(const std::string& filename,
-      boost::shared_ptr<AVCodecContext> stream, AVPixelFormat pixfmt);
-#else
-  boost::shared_ptr<AVFrame> make_frame(const std::string& filename,
-      boost::shared_ptr<AVCodecContext> stream, PixelFormat pixfmt);
-#endif
+      boost::shared_ptr<AVCodecContext> stream);
 
   /************************************************************************
    * Video reading specific utilities
@@ -213,6 +210,26 @@ namespace bob { namespace io { namespace video {
       boost::shared_ptr<AVCodecContext> codec_context,
       boost::shared_ptr<AVFrame> context_frame, bool throw_on_error);
 
+  /**
+   * Reads a single video frame from the stream. Input data must be previously
+   * allocated and be of the right type and size for holding the frame
+   * contents. It is an error to try to read past the end of the file.
+   *
+   * @note if skip is set to true, then we don't convert the data. It is the
+   * fastest/most reliable way to skip a frame.
+   *
+   * @return true if it manages to load a video frame or false otherwise. May
+   * throw on error otherwise.
+   */
+  /*
+  bool read_video_frame (const std::string& filename, int current_frame,
+      int stream_index, boost::shared_ptr<AVFormatContext> format_context,
+      boost::shared_ptr<AVCodecContext> codec_context,
+      boost::shared_ptr<SwsContext> swscaler,
+      boost::shared_ptr<AVFrame> context_frame, uint8_t* data,
+      bool throw_on_error, bool skip);
+  */
+
   /************************************************************************
    * Video writing specific utilities
    ************************************************************************/
@@ -238,7 +255,7 @@ namespace bob { namespace io { namespace video {
 
   /**
    * Creates a new AVStream on the output file given by the format context
-   * pointer, with the given configurations.
+   * pointer and the codec
    *
    * @note The returned object knows how to correctly delete itself, freeing
    * all acquired resources. Nonetheless, when this object is used in
@@ -246,15 +263,7 @@ namespace bob { namespace io { namespace video {
    * respected.
    */
   boost::shared_ptr<AVStream> make_stream(const std::string& filename,
-      boost::shared_ptr<AVFormatContext> fmtctxt, const std::string& codecname,
-      size_t height, size_t width, float framerate, float bitrate, size_t gop,
-      AVCodec* codec);
-
-  /**
-   * Allocates a video buffer (useful for ffmpeg < 0.11)
-   */
-  boost::shared_array<uint8_t> make_buffer
-    (boost::shared_ptr<AVFormatContext> format_context, size_t size);
+      boost::shared_ptr<AVFormatContext> fmtctxt, AVCodec* codec);
 
   /**
    * Opens the output file using the given context, writes a header, if the
@@ -271,14 +280,13 @@ namespace bob { namespace io { namespace video {
       boost::shared_ptr<AVFormatContext> format_context);
 
   /**
-   * Flushes frames which are buffered on the given encoder stream. This only
-   * happens if (codec->capabilities & CODEC_CAP_DELAY) is true.
+   * Flushes frames which are buffered on the given encoder stream. This is
+   * only required if (codec->capabilities & CODEC_CAP_DELAY) is true.
    */
   void flush_encoder(const std::string& filename,
       boost::shared_ptr<AVFormatContext> format_context,
-      boost::shared_ptr<AVStream> stream, AVCodec* codec,
-      boost::shared_array<uint8_t> buffer,
-      size_t buffer_size);
+      boost::shared_ptr<AVStream> stream,
+      boost::shared_ptr<AVCodecContext> codec_context);
 
   /**
    * Writes a data frame into the encoder stream.
@@ -291,11 +299,10 @@ namespace bob { namespace io { namespace video {
     const std::string& filename,
     boost::shared_ptr<AVFormatContext> format_context,
     boost::shared_ptr<AVStream> stream,
+    boost::shared_ptr<AVCodecContext> codec_context,
     boost::shared_ptr<AVFrame> context_frame,
     boost::shared_ptr<AVFrame> tmp_frame,
-    boost::shared_ptr<SwsContext> swscaler,
-    boost::shared_array<uint8_t> buffer,
-    size_t buffer_size);
+    boost::shared_ptr<SwsContext> swscaler);
 
 
 }}}
