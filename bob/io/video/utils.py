@@ -62,7 +62,7 @@ def print_numbers(frame, counter, format, fontsize):
   # img = Image.fromstring('RGB', (frame.shape[1], frame.shape[2]), frame.transpose(1,2,0).tostring())
   # img = Image.frombytes('RGB', (frame.shape[1], frame.shape[2]), frame.transpose(1,2,0).tostring()) #For some reason there is no frombytes in UBUNTU 12 04
   img = Image.frombuffer('RGB', (frame.shape[1], frame.shape[2]), frame.transpose(1,2,0).tostring(), 'raw', "RGB", 0,1 ) #This call seems weird, but I follow the instructions from here (http://pillow.readthedocs.org/en/3.0.x/reference/Image.html#PIL.Image.frombuffer). Following these instructions I don't get a warning
-  
+
   draw = ImageDraw.Draw(img)
   draw.text((x_pos, y_pos), text, font=font, fill=(255,255,255))
   return numpy.asarray(img).transpose(2,0,1)
@@ -108,7 +108,7 @@ def color_distortion(shape, framerate, format, codec, filename):
   length, height, width = shape
   from . import reader, writer
   outv = writer(filename, height, width, framerate, codec=codec,
-      format=format, check=False)
+      format=format, check=True)
   orig = []
   text_format = "%%0%dd" % len(str(length-1))
   fontsize = estimate_fontsize(height, width, text_format)
@@ -120,7 +120,7 @@ def color_distortion(shape, framerate, format, codec, filename):
     orig.append(newframe)
   outv.close()
   orig = numpy.array(orig, dtype='uint8')
-  return orig, framerate, reader(filename, check=False)
+  return orig, framerate, reader(filename, check=True)
 
 def frameskip_detection(shape, framerate, format, codec, filename):
   """Returns distortion patterns for a set of frames with big numbers.
@@ -145,7 +145,7 @@ def frameskip_detection(shape, framerate, format, codec, filename):
   text_format = "%%0%dd" % len(str(length-1))
   fontsize = estimate_fontsize(height, width, text_format)
   outv = writer(filename, height, width, framerate, codec=codec,
-      format=format, check=False)
+      format=format, check=True)
   orig = []
   for i in range(0, length):
     newframe = numpy.zeros((3, height, width), dtype='uint8')
@@ -154,7 +154,7 @@ def frameskip_detection(shape, framerate, format, codec, filename):
     orig.append(newframe)
   outv.close()
   orig = numpy.array(orig, dtype='uint8')
-  return orig, framerate, reader(filename, check=False)
+  return orig, framerate, reader(filename, check=True)
 
 def quality_degradation(shape, framerate, format, codec, filename):
   """Returns noise patterns for a set of frames.
@@ -180,7 +180,7 @@ def quality_degradation(shape, framerate, format, codec, filename):
   fontsize = estimate_fontsize(height, width, text_format)
   fontsize = int(fontsize/4)
   outv = writer(filename, height, width, framerate, codec=codec,
-      format=format, check=False)
+      format=format, check=True)
   orig = []
   for i in range(0, length):
     newframe = numpy.random.randint(0, 256, (3, height, width)).astype('uint8')
@@ -189,7 +189,7 @@ def quality_degradation(shape, framerate, format, codec, filename):
     orig.append(newframe)
   outv.close()
   orig = numpy.array(orig, dtype='uint8')
-  return orig, framerate, reader(filename, check=False)
+  return orig, framerate, reader(filename, check=True)
 
 def is_string(s):
   """Returns ``True`` if the given object is a string

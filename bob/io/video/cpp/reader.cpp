@@ -1,14 +1,3 @@
-/**
- * @file io/cxx/video::Reader.cc
- * @date Wed Jun 22 17:50:08 2011 +0200
- * @author Andre Anjos <andre.anjos@idiap.ch>
- *
- * @brief A class to help you read videos. This code originates from
- * http://ffmpeg.org/doxygen/1.0/, "decoding & encoding example".
- *
- * Copyright (C) Idiap Research Institute, Martigny, Switzerland
- */
-
 #include "reader.h"
 
 #include <stdexcept>
@@ -17,12 +6,6 @@
 #include <limits>
 
 #include <bob.io.base/blitz_array.h>
-
-#if LIBAVUTIL_VERSION_INT < 0x371167 //55.17.103 @ ffmpeg-3.0
-#ifndef AV_PIX_FMT_RGB24
-#define AV_PIX_FMT_RGB24 PIX_FMT_RGB24
-#endif
-#endif
 
 namespace bob { namespace io { namespace video {
 
@@ -72,8 +55,8 @@ namespace bob { namespace io { namespace video {
     }
 
     boost::shared_ptr<AVCodecContext> codec_ctxt =
-      make_codec_context(m_filepath,
-          format_ctxt->streams[stream_index], codec);
+      make_decoder_context(m_filepath, format_ctxt->streams[stream_index],
+          codec);
 
     /**
      * Copies some information from the context just opened
@@ -216,7 +199,7 @@ namespace bob { namespace io { namespace video {
     m_format_context = make_input_format_context(filename);
     m_stream_index = find_video_stream(filename, m_format_context);
     m_codec = find_decoder(filename, m_format_context, m_stream_index);
-    m_codec_context = make_codec_context(filename,
+    m_codec_context = make_decoder_context(filename,
         m_format_context->streams[m_stream_index], m_codec);
     m_swscaler = make_scaler(filename, m_codec_context,
         m_codec_context->pix_fmt, AV_PIX_FMT_RGB24);

@@ -1,13 +1,3 @@
-/**
- * @date Wed 28 Nov 2012 13:52:08 CET
- * @author Andre Anjos <andre.anjos@idiap.ch>
- *
- * @brief A class to help you write videos. This code originates from
- * http://ffmpeg.org/doxygen/1.0/, "decoding & encoding example".
- *
- * Copyright (C) Idiap Research Institute, Martigny, Switzerland
- */
-
 #ifndef BOB_IO_VIDEO_WRITER_H
 #define BOB_IO_VIDEO_WRITER_H
 
@@ -119,10 +109,10 @@ namespace bob { namespace io { namespace video {
         return m_format_context->oformat->long_name;
       }
       std::string codecName() const {
-        return m_stream->codec->codec->name;
+        return m_codec->name;
       }
       std::string codecLongName() const {
-        return m_stream->codec->codec->long_name;
+        return m_codec->long_name;
       }
 
       /**
@@ -188,7 +178,6 @@ namespace bob { namespace io { namespace video {
       boost::shared_ptr<AVFrame> m_context_frame; ///< output frame data
       boost::shared_ptr<AVFrame> m_rgb24_frame; ///< temporary frame data
       boost::shared_ptr<SwsContext> m_swscaler; ///< software scaler
-      boost::shared_array<uint8_t> m_buffer; ///< buffer for ffmpeg < 0.11.0
       size_t m_height;
       size_t m_width;
       double m_framerate;

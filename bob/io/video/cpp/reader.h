@@ -1,13 +1,3 @@
-/**
- * @date Wed Jun 22 17:50:08 2011 +0200
- * @author Andre Anjos <andre.anjos@idiap.ch>
- *
- * @brief A class to help you read videos. This code originates from
- * http://ffmpeg.org/doxygen/1.0/, "decoding & encoding example".
- *
- * Copyright (C) Idiap Research Institute, Martigny, Switzerland
- */
-
 #ifndef BOB_IO_VIDEO_READER_H
 #define BOB_IO_VIDEO_READER_H
 

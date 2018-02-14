@@ -65,19 +65,20 @@ def test_format_codecs():
       default    = dict(frameskip=0.1,  color=9.0,  noise=45.),
 
       # high-quality encoders
-      zlib       = dict(frameskip=0.0,  color=0.0, noise=0.0),
-      ffv1       = dict(frameskip=0.05, color=9.,  noise=46.),
-      vp8        = dict(frameskip=0.3,  color=9.0, noise=65.),
-      libvpx     = dict(frameskip=0.3,  color=9.0, noise=65.),
-      h264       = dict(frameskip=0.5,  color=9.0, noise=55.),
-      libx264    = dict(frameskip=0.4,  color=9.0, noise=50.),
-      theora     = dict(frameskip=0.5,  color=9.0, noise=70.),
-      libtheora  = dict(frameskip=0.5,  color=9.0, noise=70.),
-      mpeg4      = dict(frameskip=1.0,  color=9.0, noise=55.),
+      zlib        = dict(frameskip=0.0,  color=0.0, noise=0.0),
+      ffv1        = dict(frameskip=0.05, color=9.0,  noise=46.),
+      vp8         = dict(frameskip=0.3,  color=9.0, noise=65.),
+      libvpx      = dict(frameskip=0.3,  color=9.0, noise=65.),
+      h264        = dict(frameskip=0.5,  color=9.0, noise=55.),
+      libx264     = dict(frameskip=0.4,  color=9.0, noise=50.),
+      libopenh264 = dict(frameskip=0.5,  color=9.0, noise=55.),
+      theora      = dict(frameskip=0.5,  color=9.0, noise=70.),
+      libtheora   = dict(frameskip=0.5,  color=9.0, noise=70.),
+      mpeg4       = dict(frameskip=1.0,  color=9.0, noise=55.),
 
       # older, but still good quality encoders
       mjpeg      = dict(frameskip=1.2,  color=9.0, noise=50.),
-      mpegvideo  = dict(frameskip=1.3,  color=9.0, noise=75.),
+      mpegvideo  = dict(frameskip=1.3,  color=9.0, noise=80.),
       mpeg2video = dict(frameskip=1.3,  color=9.0, noise=75.),
       mpeg1video = dict(frameskip=1.4,  color=9.0, noise=50.),
 
@@ -87,15 +88,6 @@ def test_format_codecs():
       msmpeg4    = dict(frameskip=6.,   color=10., noise=50.),
       msmpeg4v2  = dict(frameskip=6.,   color=10., noise=50.),
       )
-
-  # some exceptions
-  if test_utils.ffmpeg_version_lessthan('0.6'):
-    distortions['ffv1']['frameskip'] = 0.55
-    distortions['mpeg1video']['frameskip'] = 1.5
-    distortions['mpegvideo']['color'] = 9.0
-    distortions['mpegvideo']['frameskip'] = 1.4
-    distortions['mpeg2video']['color'] = 9.0
-    distortions['mpeg2video']['frameskip'] = 1.4
 
   from . import supported_videowriter_formats
   SUPPORTED = supported_videowriter_formats()
@@ -121,7 +113,7 @@ def check_user_video(format, codec, maxdist):
 
     # encode the input video using the format and codec provided by the user
     outv = writer(fname, oheight, owidth, orig_vreader.frame_rate,
-        codec=codec, format=format, check=False)
+        codec=codec, format=format, check=True)
     for k in orig: outv.append(k)
     outv.close()
 
@@ -140,7 +132,7 @@ def check_user_video(format, codec, maxdist):
     assert max(dist) <= maxdist, "max(distortion) %g > %g allowed for format `%s' and codec `%s'" % (max(dist), maxdist, format, codec)
 
     # make sure that the encoded frame rate is not off by a big amount
-    assert abs(orig_vreader.frame_rate - encoded.frame_rate) <= (1.0/MAXLENTH), "original video framerate %g differs from encoded %g by more than %g for format `%s' and codec `%s'" % (encoded.frame_rate, framerate, 1.0/MAXLENTH, format, codec)
+    assert abs(orig_vreader.frame_rate - encoded.frame_rate) <= (1.0/MAXLENTH), "original video framerate %g differs from encoded %g by more than %g for format `%s' and codec `%s'" % (encoded.frame_rate, orig_vreader.framerate, 1.0/MAXLENTH, format, codec)
 
   finally:
 
@@ -154,15 +146,16 @@ def test_user_video():
       default    = 1.5,
 
       # high-quality encoders
-      zlib       = 0.0,
-      ffv1       = 1.7,
-      vp8        = 2.7,
-      libvpx     = 2.7,
-      h264       = 2.7,
-      libx264    = 2.5,
-      theora     = 2.0,
-      libtheora  = 2.0,
-      mpeg4      = 2.3,
+      zlib        = 0.0,
+      ffv1        = 1.7,
+      vp8         = 2.7,
+      libvpx      = 2.7,
+      h264        = 2.7,
+      libx264     = 2.5,
+      libopenh264 = 3.0,
+      theora      = 2.0,
+      libtheora   = 2.0,
+      mpeg4       = 2.3,
 
       # older, but still good quality encoders
       mjpeg      = 1.8,

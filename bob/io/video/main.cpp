@@ -128,13 +128,8 @@ static PyObject* describe_codec(const AVCodec* codec) {
 
     unsigned int i=0;
     while(codec->pix_fmts[i] != -1) {
-      if (!list_append(pixfmt,
-#if LIBAVUTIL_VERSION_INT >= 0x320f01 //50.15.1 @ ffmpeg-0.6
-            av_get_pix_fmt_name
-#else
-            avcodec_get_pix_fmt_name
-#endif
-            (codec->pix_fmts[i++]))) return 0;
+      if (!list_append(pixfmt, av_get_pix_fmt_name(codec->pix_fmts[i++])))
+        return 0;
     }
     pixfmt = PySequence_Tuple(pixfmt);
   }
@@ -603,6 +598,11 @@ static PyModuleDef module_definition = {
 #endif
 
 static PyObject* create_module (void) {
+
+  /* Initialize libavcodec, and register all codecs and formats. */
+  av_log_set_level(AV_LOG_QUIET);
+  avcodec_register_all();
+  av_register_all();
 
 # if PY_VERSION_HEX >= 0x03000000
   PyObject* module = PyModule_Create(&module_definition);
