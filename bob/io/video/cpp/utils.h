@@ -210,26 +210,6 @@ namespace bob { namespace io { namespace video {
       boost::shared_ptr<AVCodecContext> codec_context,
       boost::shared_ptr<AVFrame> context_frame, bool throw_on_error);
 
-  /**
-   * Reads a single video frame from the stream. Input data must be previously
-   * allocated and be of the right type and size for holding the frame
-   * contents. It is an error to try to read past the end of the file.
-   *
-   * @note if skip is set to true, then we don't convert the data. It is the
-   * fastest/most reliable way to skip a frame.
-   *
-   * @return true if it manages to load a video frame or false otherwise. May
-   * throw on error otherwise.
-   */
-  /*
-  bool read_video_frame (const std::string& filename, int current_frame,
-      int stream_index, boost::shared_ptr<AVFormatContext> format_context,
-      boost::shared_ptr<AVCodecContext> codec_context,
-      boost::shared_ptr<SwsContext> swscaler,
-      boost::shared_ptr<AVFrame> context_frame, uint8_t* data,
-      bool throw_on_error, bool skip);
-  */
-
   /************************************************************************
    * Video writing specific utilities
    ************************************************************************/

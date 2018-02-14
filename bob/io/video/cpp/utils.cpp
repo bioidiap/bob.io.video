@@ -922,91 +922,31 @@ void bob::io::video::write_video_frame (const blitz::Array<uint8_t,3>& data,
 
 }
 
-/*
-bool bob::io::video::read_video_frame (const std::string& filename,
-    int current_frame, int stream_index,
-    boost::shared_ptr<AVFormatContext> format_context,
-    boost::shared_ptr<AVCodecContext> codec_context,
-    boost::shared_ptr<SwsContext> swscaler,
-    boost::shared_ptr<AVFrame> context_frame, uint8_t* data,
-    bool throw_on_error, bool skip) {
+// The flush packet is a non-NULL packet with size 0 and data NULL
+static int decode(AVCodecContext *avctx, AVFrame *frame, int *got_frame,
+    AVPacket *pkt)
+{
+  int ret;
 
-  boost::shared_ptr<AVPacket> pkt = make_packet();
+  *got_frame = 0;
 
-  //reads packet from file stream
-  int ok = av_read_frame(format_context.get(), pkt.get());
-  if (ok < 0) {
-    if (throw_on_error) {
-      boost::format m("bob::io::video::av_read_frame() failed: on file `%s' - ffmpeg reports error %d == `%s'");
-      m % filename % ok % ffmpeg_error(ok);
-      throw std::runtime_error(m.str());
-    }
-    else return false;
+  if (pkt) {
+    ret = avcodec_send_packet(avctx, pkt);
+    // In particular, we don't expect AVERROR(EAGAIN), because we read all
+    // decoded frames with avcodec_receive_frame() until done.
+    if (ret < 0)
+      return ret == AVERROR_EOF ? 0 : ret;
   }
 
-  //sends packet to decoder
-  ok = avcodec_send_packet(codec_context.get(), pkt.get());
-  if (ok < 0) {
-    if (throw_on_error) {
-      boost::format m("bob::io::video::avcodec_send_packet() failed: on file `%s' - ffmpeg reports error %d == `%s'");
-      m % filename % ok % ffmpeg_error(ok);
-      throw std::runtime_error(m.str());
-    }
-    else return false;
-  }
+  ret = avcodec_receive_frame(avctx, frame);
+  if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
+    return ret;
+  if (ret >= 0)
+    *got_frame = 1;
 
-  ok = avcodec_receive_frame(codec_context.get(), context_frame.get());
-
-  if (ok == AVERROR(EAGAIN)) {
-    //output is not available right now, maybe requires more packets?
-    boost::format m("bob::io::video::avcodec_receive_frame() failed: on file `%s' - ffmpeg reports error %d == `%s' (need more data!)");
-    m % filename % ok % ffmpeg_error(ok);
-    throw std::runtime_error(m.str());
-  }
-
-  if (ok == AVERROR_EOF) {
-    if (throw_on_error) {
-      boost::format m("bob::io::video::avcodec_receive_frame() failed: on file `%s' - ffmpeg reports error %d == `%s' (trying to read past end-of-file)");
-      m % filename % ok % ffmpeg_error(ok);
-      throw std::runtime_error(m.str());
-    }
-    return false;
-  }
-
-  if (ok < 0) { //get out, there is a real error condition going on...
-    if (throw_on_error) {
-      boost::format m("bob::io::video::avcodec_receive_frame() failed: on file `%s' - ffmpeg reports error %d == `%s'");
-      m % filename % ok % ffmpeg_error(ok);
-      throw std::runtime_error(m.str());
-    }
-    return false;
-  }
-
-  //at this point, we skip the decoding if we're skipping the current frame
-  if (skip) return true;
-
-  // In this case, we call the software scaler to decode the frame data.
-  // Normally, this means converting from planar YUV420 into packed RGB.
-
-  uint8_t* planes[] = {data, 0};
-  int linesize[] = {3*codec_context->width, 0};
-
-  int conv_height = sws_scale(swscaler.get(), context_frame->data,
-      context_frame->linesize, 0, codec_context->height, planes, linesize);
-
-  if (conv_height < 0) {
-    if (throw_on_error) {
-      boost::format m("bob::io::video::sws_scale() failed: could not scale frame %d of file `%s' - ffmpeg reports error %d");
-      m % current_frame % filename % conv_height;
-      throw std::runtime_error(m.str());
-    }
-    return false;
-  }
-
-  return true;
-
+  return 0;
 }
-*/
+
 
 static int decode_frame (const std::string& filename, int current_frame,
     boost::shared_ptr<AVCodecContext> codec_context,
@@ -1024,8 +964,8 @@ static int decode_frame (const std::string& filename, int current_frame,
   // It is **not** an error that ok is >= 0 and got_frame == 0. This, in fact,
   // happens often with recent versions of ffmpeg.
 
-  int ok = avcodec_decode_video2(codec_context.get(), context_frame.get(),
-      &got_frame, pkt.get());
+  int ok = decode(codec_context.get(), context_frame.get(), &got_frame,
+      pkt.get());
   if (ok < 0 && throw_on_error) {
     boost::format m("bob::io::video::avcodec_decode_video/2() failed: could not decode frame %d of file `%s' - ffmpeg reports error %d == `%s'");
     m % current_frame % filename % ok % ffmpeg_error(ok);
@@ -1133,8 +1073,8 @@ static int dummy_decode_frame (const std::string& filename, int current_frame,
   // It is **not** an error that ok is >= 0 and got_frame == 0. This, in fact,
   // happens often with recent versions of ffmpeg.
 
-  int ok = avcodec_decode_video2(codec_context.get(), context_frame.get(),
-      &got_frame, pkt.get());
+  int ok = decode(codec_context.get(), context_frame.get(), &got_frame,
+      pkt.get());
   if (ok < 0 && throw_on_error) {
     boost::format m("bob::io::video::avcodec_decode_video/2() failed: could not skip frame %d of file `%s' - ffmpeg reports error %d == `%s'");
     m % current_frame % filename % ok % ffmpeg_error(ok);
