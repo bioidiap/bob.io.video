@@ -15,6 +15,9 @@ from .utils import color_distortion, frameskip_detection, quality_degradation
 # These are some global parameters for the test.
 INPUT_VIDEO = test_utils.datafile('test.mov', __name__)
 
+# Fix numpy random seed for tests, so they are repeatable
+numpy.random.seed(0)
+
 def check_format_codec(function, shape, framerate, format, codec, maxdist):
 
   length, height, width = shape
