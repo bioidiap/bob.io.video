@@ -472,7 +472,7 @@ boost::shared_ptr<AVStream> bob::io::video::make_stream(
 }
 
 static void deallocate_frame(AVFrame* f) {
-  av_freep(&f->data[0]);
+  if (f->data[0]) av_freep(&f->data[0]);
   av_frame_unref(f);
   av_frame_free(&f);
 }
@@ -505,7 +505,7 @@ bob::io::video::make_frame(const std::string& filename,
 }
 
 static void deallocate_empty_frame(AVFrame* f) {
-  if (f) av_free(f);
+  av_frame_free(&f);
 }
 
 boost::shared_ptr<AVFrame> bob::io::video::make_empty_frame(const std::string& filename) {
