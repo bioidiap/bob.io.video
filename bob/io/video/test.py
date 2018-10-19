@@ -92,6 +92,33 @@ def test_video_reader_attributes():
   assert isinstance(iv.info, str)
 
 
+def test_memory_leak():
+  import psutil
+  import tempfile
+  import gc
+
+  from . import reader
+  from bob.io.base import save
+
+  my_video = numpy.random.random_integers(0, 255, (10, 3, 256 * 4, 256 * 4))
+  with tempfile.NamedTemporaryFile(suffix='.avi') as f:
+    save(my_video.astype('uint8'), f.name)
+    del my_video
+    gc.collect()
+    for i in range(20):
+        vd = reader(f.name)
+        for frame in vd:
+            pass
+        del frame
+        del vd
+        gc.collect()
+        if i == 0:
+          first = psutil.virtual_memory().used
+    last = psutil.virtual_memory().used
+
+  assert (last - first) / first < 0.003, "Looks like we have a memory leak!"
+
+
 def write_unicode_temp_file():
 
   prefix = 'bobtest_straße_'

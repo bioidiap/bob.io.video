@@ -472,10 +472,9 @@ boost::shared_ptr<AVStream> bob::io::video::make_stream(
 }
 
 static void deallocate_frame(AVFrame* f) {
-  if (f) {
-    if (f->data[0]) av_free(f->data[0]);
-    av_free(f);
-  }
+  if (f->data[0]) av_freep(&f->data[0]);
+  av_frame_unref(f);
+  av_frame_free(&f);
 }
 
 boost::shared_ptr<AVFrame>
@@ -496,7 +495,7 @@ bob::io::video::make_frame(const std::string& filename,
 
   int ok = av_image_alloc(retval->data, retval->linesize, codec->width, codec->height, codec->pix_fmt, 1);
   if (ok < 0) {
-    av_free(retval);
+    av_frame_free(&retval);
     boost::format m("bob::io::video::av_image_alloc(data, linesize, width=%d, height=%d, 1) failed: cannot allocate frame/picture buffer start reading or writing video file `%s'");
     m % codec->width % codec->height % filename;
     throw std::runtime_error(m.str());
@@ -506,7 +505,7 @@ bob::io::video::make_frame(const std::string& filename,
 }
 
 static void deallocate_empty_frame(AVFrame* f) {
-  if (f) av_free(f);
+  av_frame_free(&f);
 }
 
 boost::shared_ptr<AVFrame> bob::io::video::make_empty_frame(const std::string& filename) {
