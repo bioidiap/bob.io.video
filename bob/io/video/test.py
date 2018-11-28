@@ -119,6 +119,60 @@ def test_memory_leak():
   assert (last - first) / first < 0.003, "Looks like we have a memory leak!"
 
 
+def test_open_file_leak():
+  import psutil
+  import tempfile
+  import gc
+
+  from . import reader
+  from bob.io.base import save
+
+  my_video = numpy.random.random_integers(0, 255, (10, 3, 256 * 4, 256 * 4))
+
+  process = psutil.Process()
+
+  def open_files_count(path):
+    return len([f for f in process.open_files() if f.path == path])
+
+  with tempfile.NamedTemporaryFile(suffix='.avi') as f:
+    path = f.name
+    save(my_video.astype('uint8'), path)
+
+    # Get a count before doing anything. This following count is 1 because
+    # NamedTemporaryFile keeps a pointer to this file. We will check if the
+    # count goes to 0 in the end!
+    last_count = open_files_count(path)
+
+    # load the video at once and see if the count is constant
+    load(path)
+    gc.collect()
+    new_count = open_files_count(path)
+    assert new_count == last_count, \
+        ('We did not close all the files when loading the video at once. '
+         'old count: {}, new count: {}'.format(last_count, new_count))
+
+    # iterate over all frames and see if the count is constant
+    for frame in reader(path):
+      pass
+    gc.collect()
+    new_count = open_files_count(path)
+    assert new_count == last_count, \
+        ('We did not close all the files when iterating over all frames. '
+         'old count: {}, new count: {}'.format(last_count, new_count))
+
+    # iterate over one frame and see if the count is constant
+    for frame in reader(path):
+      break
+    gc.collect()
+    new_count = open_files_count(path)
+    assert new_count == last_count, \
+        ('We did not close all the files when iterating over one frame. '
+         'old count: {}, new count: {}'.format(last_count, new_count))
+
+  count = open_files_count(path)
+  assert count == 0, 'The temporary file was not closed! {}'.format(count)
+
+
 def write_unicode_temp_file():
 
   prefix = 'bobtest_straße_'

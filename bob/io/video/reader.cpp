@@ -480,6 +480,12 @@ static PyMappingMethods PyBobIoVideoReader_Mapping = {
 static const char* s_videoreaderiterator(BOB_EXT_MODULE_PREFIX ".reader.iter");
 
 
+static void PyBobIoVideoReaderIterator_Delete (PyBobIoVideoReaderIteratorObject* self) {
+  self->iter->reset();
+  self->iter.reset();
+  Py_XDECREF((PyObject*)self->pyreader);
+}
+
 static PyObject* PyBobIoVideoReaderIterator_Iter (PyBobIoVideoReaderIteratorObject* self) {
   return Py_BuildValue("O", self);
 }
@@ -488,9 +494,6 @@ static PyObject* PyBobIoVideoReaderIterator_Next (PyBobIoVideoReaderIteratorObje
 
   if ((*self->iter == self->pyreader->v->end()) ||
       (self->iter->cur() == self->pyreader->v->numberOfFrames())) {
-    self->iter->reset();
-    self->iter.reset();
-    Py_XDECREF((PyObject*)self->pyreader);
     return 0;
   }
 
@@ -586,6 +589,7 @@ bool init_BobIoVideoReader(PyObject* module){
   PyBobIoVideoReaderIterator_Type.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_ITER;
 
   PyBobIoVideoReaderIterator_Type.tp_new = PyType_GenericNew;
+  PyBobIoVideoReaderIterator_Type.tp_dealloc = reinterpret_cast<destructor>(PyBobIoVideoReaderIterator_Delete);
   PyBobIoVideoReaderIterator_Type.tp_iter = reinterpret_cast<getiterfunc>(PyBobIoVideoReaderIterator_Iter);
   PyBobIoVideoReaderIterator_Type.tp_iternext = reinterpret_cast<getiterfunc>(PyBobIoVideoReaderIterator_Next);
 
