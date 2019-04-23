@@ -601,8 +601,6 @@ static PyObject* create_module (void) {
 
   /* Initialize libavcodec, and register all codecs and formats. */
   av_log_set_level(AV_LOG_QUIET);
-  avcodec_register_all();
-  av_register_all();
 
 # if PY_VERSION_HEX >= 0x03000000
   PyObject* module = PyModule_Create(&module_definition);
