@@ -60,7 +60,10 @@ static void check_codec_support(std::map<std::string, const AVCodec*>& retval) {
 
   std::set<std::string> wishlist(tmp, tmp + (sizeof(tmp)/sizeof(tmp[0])));
 
-  for (AVCodec* it = av_codec_next(0); it != 0; it = av_codec_next(it) ) {
+  void *i = 0;
+  const AVCodec *it;
+
+  while ((it = av_codec_iterate(&i))) {
     if (wishlist.find(it->name) == wishlist.end()) continue; ///< ignore this codec
     if (it->type == AVMEDIA_TYPE_VIDEO) {
       auto exists = retval.find(std::string(it->name));
@@ -93,7 +96,9 @@ static void check_iformat_support(std::map<std::string, AVInputFormat*>& retval)
 
   std::set<std::string> wishlist(tmp, tmp + (sizeof(tmp)/sizeof(tmp[0])));
 
-  for (AVInputFormat* it = av_iformat_next(0); it != 0; it = av_iformat_next(it) ) {
+  const AVInputFormat *it = NULL;
+  void *i = 0;
+  while ((it = av_demuxer_iterate(&i))) {
     std::vector<std::string> names;
     bob::io::video::tokenize_csv(it->name, names);
     for (auto k = names.begin(); k != names.end(); ++k) {
@@ -105,7 +110,7 @@ static void check_iformat_support(std::map<std::string, AVInputFormat*>& retval)
           << ") which is already assigned to \"" << exists->second->long_name
           << "\"" << std::endl;
       }
-      else retval[*k] = it;
+      else retval[*k] = (AVInputFormat*)it;
     }
   }
 }
@@ -121,7 +126,9 @@ static void check_oformat_support(std::map<std::string, AVOutputFormat*>& retval
 
   std::set<std::string> wishlist(tmp, tmp + (sizeof(tmp)/sizeof(tmp[0])));
 
-  for (AVOutputFormat* it = av_oformat_next(0); it != 0; it = av_oformat_next(it) ) {
+  const AVOutputFormat *it = NULL;
+  void *i = 0;
+  while ((it = av_muxer_iterate(&i))) {
     std::vector<std::string> names;
     bob::io::video::tokenize_csv(it->name, names);
     for (auto k = names.begin(); k != names.end(); ++k) {
@@ -133,7 +140,7 @@ static void check_oformat_support(std::map<std::string, AVOutputFormat*>& retval
           << ") which is already assigned to \"" << exists->second->long_name
           << "\"" << std::endl;
       }
-      else retval[*k] = it;
+      else retval[*k] = (AVOutputFormat*)it;
     }
   }
 }
@@ -195,7 +202,10 @@ void bob::io::video::tokenize_csv(const char* what, std::vector<std::string>& va
 }
 
 void bob::io::video::codecs_installed (std::map<std::string, const AVCodec*>& installed) {
-  for (AVCodec* it = av_codec_next(0); it != 0; it = av_codec_next(it) ) {
+  void *i = 0;
+  const AVCodec *it;
+
+  while ((it = av_codec_iterate(&i))) {
     if (it->type == AVMEDIA_TYPE_VIDEO) {
       /**
       auto exists = installed.find(std::string(it->name));
@@ -235,7 +245,9 @@ bool bob::io::video::iformat_is_supported (const std::string& name) {
 }
 
 void bob::io::video::iformats_installed (std::map<std::string, AVInputFormat*>& installed) {
-  for (AVInputFormat* it = av_iformat_next(0); it != 0; it = av_iformat_next(it) ) {
+  const AVInputFormat *it = NULL;
+  void *i = 0;
+  while ((it = av_demuxer_iterate(&i))) {
     std::vector<std::string> names;
     bob::io::video::tokenize_csv(it->name, names);
     for (auto k = names.begin(); k != names.end(); ++k) {
@@ -246,7 +258,7 @@ void bob::io::video::iformats_installed (std::map<std::string, AVInputFormat*>& 
           << ") which is already assigned to \"" << exists->second->long_name
           << "\"" << std::endl;
       }
-      else installed[*k] = it;
+      else installed[*k] = (AVInputFormat*)it;
     }
   }
 }
@@ -267,7 +279,9 @@ bool bob::io::video::oformat_is_supported (const std::string& name) {
 }
 
 void bob::io::video::oformats_installed (std::map<std::string, AVOutputFormat*>& installed) {
-  for (AVOutputFormat* it = av_oformat_next(0); it != 0; it = av_oformat_next(it) ) {
+  const AVOutputFormat *it = NULL;
+  void *i = 0;
+  while ((it = av_muxer_iterate(&i))) {
     if (!it->video_codec) continue;
     std::vector<std::string> names;
     bob::io::video::tokenize_csv(it->name, names);
@@ -279,7 +293,7 @@ void bob::io::video::oformats_installed (std::map<std::string, AVOutputFormat*>&
           << ") which is already assigned to \"" << exists->second->long_name
           << "\"" << std::endl;
       }
-      else installed[*k] = it;
+      else installed[*k] = (AVOutputFormat*)it;
     }
   }
 }
@@ -717,7 +731,7 @@ boost::shared_ptr<AVCodecContext> bob::io::video::make_encoder_context(
 
   /* Some formats want stream headers to be separate. */
   if (fmtctxt->oformat->flags & AVFMT_GLOBALHEADER) {
-    retval->flags |= CODEC_FLAG_GLOBAL_HEADER;
+    retval->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
   }
 
   // In the case we opened for writing, this should initialize the context
@@ -828,8 +842,6 @@ void bob::io::video::flush_encoder (const std::string& filename,
     boost::shared_ptr<AVStream> stream,
     boost::shared_ptr<AVCodecContext> codec_context) {
 
-  if (format_context->oformat->flags & AVFMT_RAWPICTURE) return;
-
   boost::shared_ptr<AVPacket> pkt = make_packet();
 
   int ok = avcodec_send_frame(codec_context.get(), 0); //flush
@@ -871,47 +883,35 @@ void bob::io::video::write_video_frame (const blitz::Array<uint8_t,3>& data,
 
   boost::shared_ptr<AVPacket> pkt = make_packet();
 
-  if (format_context->oformat->flags & AVFMT_RAWPICTURE) {
-    /* Raw video case - directly store the picture in the packet */
-    pkt->flags        |= AV_PKT_FLAG_KEY;
-    pkt->data          = context_frame->data[0];
-    pkt->size          = sizeof(AVPicture);
-    write_packet_to_stream(filename, format_context, stream, codec_context,
-        pkt);
+  int ok = avcodec_send_frame(codec_context.get(), context_frame.get());
+  if (ok < 0) {
+    boost::format m("bob::io::video::avcodec_send_frame() failed: failed to encode video frame while writing to file `%s' - ffmpeg reports error %d == `%s'");
+    m % filename % ok % ffmpeg_error(ok);
+    throw std::runtime_error(m.str());
   }
 
-  else {
-
-    int ok = avcodec_send_frame(codec_context.get(), context_frame.get());
-    if (ok < 0) {
-      boost::format m("bob::io::video::avcodec_send_frame() failed: failed to encode video frame while writing to file `%s' - ffmpeg reports error %d == `%s'");
+  while (ok >= 0) {
+    ok = avcodec_receive_packet(codec_context.get(), pkt.get());
+    if (ok == AVERROR(EAGAIN)) { //ready for new frame
+      break;
+    }
+    else if (ok == AVERROR_EOF) {
+      boost::format m("bob::io::video::avcodec_receive_packet() failed: failed to encode video frame while writing to file `%s' - ffmpeg reports error %d == `%s' (file is already closed)");
       m % filename % ok % ffmpeg_error(ok);
       throw std::runtime_error(m.str());
     }
-
-    while (ok >= 0) {
-      ok = avcodec_receive_packet(codec_context.get(), pkt.get());
-      if (ok == AVERROR(EAGAIN)) { //ready for new frame
-        break;
-      }
-      else if (ok == AVERROR_EOF) {
-        boost::format m("bob::io::video::avcodec_receive_packet() failed: failed to encode video frame while writing to file `%s' - ffmpeg reports error %d == `%s' (file is already closed)");
-        m % filename % ok % ffmpeg_error(ok);
-        throw std::runtime_error(m.str());
-      }
-      else if (ok < 0) { //real error condition
-        boost::format m("bob::io::video::avcodec_receive_packet() failed: failed to encode video frame while writing to file `%s' - ffmpeg reports error %d == `%s'");
-        m % filename % ok % ffmpeg_error(ok);
-        throw std::runtime_error(m.str());
-      }
-      else if (pkt->size > 0) { //write last packet to the stream
-        write_packet_to_stream(filename, format_context, stream, codec_context,
-            pkt);
-      }
-      av_packet_unref(pkt.get());
+    else if (ok < 0) { //real error condition
+      boost::format m("bob::io::video::avcodec_receive_packet() failed: failed to encode video frame while writing to file `%s' - ffmpeg reports error %d == `%s'");
+      m % filename % ok % ffmpeg_error(ok);
+      throw std::runtime_error(m.str());
     }
-
+    else if (pkt->size > 0) { //write last packet to the stream
+      write_packet_to_stream(filename, format_context, stream, codec_context,
+          pkt);
+    }
+    av_packet_unref(pkt.get());
   }
+
 
   //sets the output frame PTS [Note: presentation timestamp in time_base
   //units (time when frame should be shown to user) If AV_NOPTS_VALUE then
