@@ -116,7 +116,7 @@ def test_memory_leak():
           first = psutil.virtual_memory().used
     last = psutil.virtual_memory().used
 
-  assert (last - first) / first < 0.03, "Looks like we have a memory leak!"
+  assert (last - first) / first < 0.1, "Looks like we have a memory leak!"
 
 
 def test_open_file_leak():
