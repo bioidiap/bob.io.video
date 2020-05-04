@@ -19,6 +19,13 @@ from bob.io.base import load
 INPUT_VIDEO = test_utils.datafile('test.mov', __name__)
 
 
+def test_picklability():
+  from . import reader, writer
+  import pickle
+  assert reader is pickle.loads(pickle.dumps(reader))
+  assert writer is pickle.loads(pickle.dumps(writer))
+
+
 def test_codec_support():
 
   # Describes all encoders
@@ -116,7 +123,7 @@ def test_memory_leak():
           first = psutil.virtual_memory().used
     last = psutil.virtual_memory().used
 
-  assert (last - first) / first < 0.1, "Looks like we have a memory leak!"
+  assert (last - first) / first < 0.1, f"Looks like we have a memory leak! first:{first} last:{last}"
 
 
 def test_open_file_leak():

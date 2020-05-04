@@ -28,7 +28,7 @@ static auto s_reader = bob::extension::ClassDoc(
   .add_parameter("filename", "str", "The file path to the file you want to read data from")
   .add_parameter("check", "bool", "Format and codec will be extracted from the video metadata.")
 );
-
+static auto s_fullname = BOB_EXT_MODULE_PREFIX ".reader";
 
 static void PyBobIoVideoReader_Delete (PyBobIoVideoReaderObject* o) {
   o->v.reset();
@@ -557,7 +557,7 @@ PyTypeObject PyBobIoVideoReaderIterator_Type = {
 bool init_BobIoVideoReader(PyObject* module){
 
   // initialize the reader
-  PyBobIoVideoReader_Type.tp_name = s_reader.name();
+  PyBobIoVideoReader_Type.tp_name = s_fullname;
   PyBobIoVideoReader_Type.tp_basicsize = sizeof(PyBobIoVideoReaderObject);
   PyBobIoVideoReader_Type.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE;
   PyBobIoVideoReader_Type.tp_doc = s_reader.doc();
