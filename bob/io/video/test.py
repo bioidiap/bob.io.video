@@ -19,6 +19,13 @@ from bob.io.base import load
 INPUT_VIDEO = test_utils.datafile('test.mov', __name__)
 
 
+def test_picklability():
+  from . import reader, writer
+  import pickle
+  assert reader is pickle.loads(pickle.dumps(reader))
+  assert writer is pickle.loads(pickle.dumps(writer))
+
+
 def test_codec_support():
 
   # Describes all encoders

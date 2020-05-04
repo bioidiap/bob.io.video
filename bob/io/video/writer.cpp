@@ -34,6 +34,7 @@ static auto s_writer = bob::extension::ClassDoc(
   .add_parameter("format", "str", "[Default: ``''``] If you must, specify a valid FFmpeg output format name and that will be used to encode the video on the output file. Leave it empty to guess from the filename extension")
   .add_parameter("check", "bool", "[Default: ``True``] ")
 );
+static auto s_fullname = BOB_EXT_MODULE_PREFIX ".writer";
 
 
 static void PyBobIoVideoWriter_Delete (PyBobIoVideoWriterObject* o) {
@@ -482,7 +483,7 @@ PyTypeObject PyBobIoVideoWriter_Type = {
 bool init_BobIoVideoWriter(PyObject* module){
 
   // initialize the writer
-  PyBobIoVideoWriter_Type.tp_name = s_writer.name();
+  PyBobIoVideoWriter_Type.tp_name = s_fullname;
   PyBobIoVideoWriter_Type.tp_basicsize = sizeof(PyBobIoVideoWriterObject);
   PyBobIoVideoWriter_Type.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE;
   PyBobIoVideoWriter_Type.tp_doc = s_writer.doc();
