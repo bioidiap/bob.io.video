@@ -38,9 +38,9 @@ requirements:
   run:
     - python
     - setuptools
-    - pillow
     - boost
     - {{ pin_compatible('numpy') }}
+    - {{ pin_compatible('pillow') }}
 
 test:
   imports:
@@ -53,7 +53,6 @@ test:
     - conda inspect linkages -p $PREFIX {{ name }}  # [not win]
     - conda inspect objects -p $PREFIX {{ name }}  # [osx]
   requires:
-    - bob-devel {{ bob_devel }}.*
     - nose
     - coverage
     - sphinx
