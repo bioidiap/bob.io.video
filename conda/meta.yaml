@@ -53,11 +53,11 @@ test:
     - conda inspect linkages -p $PREFIX {{ name }}  # [not win]
     - conda inspect objects -p $PREFIX {{ name }}  # [osx]
   requires:
-    - nose
-    - coverage
-    - sphinx
-    - sphinx_rtd_theme
-    - psutil
+    - nose {{ nose }}
+    - coverage {{ coverage }}
+    - sphinx {{ sphinx }}
+    - sphinx_rtd_theme {{ sphinx_rtd_theme }}
+    - psutil {{ psutil }}
 
 about:
   home: https://www.idiap.ch/software/bob/
