@@ -73,10 +73,10 @@ def test_format_codecs():
 
       # high-quality encoders
       zlib        = dict(frameskip=0.0,  color=0.0, noise=0.0),
-      ffv1        = dict(frameskip=0.05, color=9.0,  noise=46.),
-      vp8         = dict(frameskip=0.3,  color=9.0, noise=65.),
-      libvpx      = dict(frameskip=0.3,  color=9.0, noise=65.),
-      h264        = dict(frameskip=160.,  color=10., noise=160.),
+      ffv1        = dict(frameskip=0.6, color=9.0,  noise=46.),
+      vp8         = dict(frameskip=0.6,  color=9.0, noise=65.),
+      libvpx      = dict(frameskip=0.6,  color=9.0, noise=65.),
+      h264        = dict(frameskip=160.,  color=160., noise=160.),
       libx264     = dict(frameskip=160.,  color=160., noise=160.),
       libopenh264 = dict(frameskip=160.,  color=10., noise=160.),
       theora      = dict(frameskip=0.5,  color=9.0, noise=70.),
@@ -85,9 +85,9 @@ def test_format_codecs():
 
       # older, but still good quality encoders
       mjpeg      = dict(frameskip=1.2,  color=9.0, noise=50.),
-      mpegvideo  = dict(frameskip=1.3,  color=9.0, noise=80.),
-      mpeg2video = dict(frameskip=1.3,  color=9.0, noise=80.),
-      mpeg1video = dict(frameskip=1.4,  color=9.0, noise=50.),
+      mpegvideo  = dict(frameskip=1.4,  color=9.0, noise=80.),
+      mpeg2video = dict(frameskip=1.4,  color=9.0, noise=80.),
+      mpeg1video = dict(frameskip=1.5,  color=9.0, noise=50.),
 
       # low quality encoders - avoid using - available for compatibility
       wmv2       = dict(frameskip=3.0,  color=10., noise=50.),
